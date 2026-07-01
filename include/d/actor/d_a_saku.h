@@ -25,9 +25,9 @@ public:
     BOOL mode_break_fire(int);
     BOOL mode_break_throw_obj(int);
     BOOL RecreateHeap(int, int);
-    bool CreateHeap(int, int);
+    BOOL CreateHeap(int, int);
     int GetDzbId(int);
-    bool CreateDummyHeap(int);
+    BOOL CreateDummyHeap(int);
     BOOL loadMoveBG(int, int, int);
     BOOL loadModel(int, int, int);
     BOOL burn();
