@@ -83,7 +83,6 @@ void daSaku_c::CreateInit() {
 
 /* 00000200-000003A8       .text saku_draw_sub__8daSaku_cFi */
 int daSaku_c::saku_draw_sub(int i_no) {
-    /* Nonmatching - argument evaluation order */
     bool flag = true;
     if (field_0xedc[i_no][0] < l_sakuHIO.field_0x16) {
         flag = false;
@@ -102,7 +101,7 @@ int daSaku_c::saku_draw_sub(int i_no) {
     if (m_heap[i_no][1] != 0 && mpModel[i_no][1] != 0 && field_0xedc[i_no][1] != 0) {
         g_env_light.settingTevStruct(0, &current.pos, &tevStr);
         g_env_light.setLightTevColorType(mpModel[i_no][1], &tevStr);
-        matAlphaAnim(mpModel[i_no][1]->getModelData(), 0xff, flag == false);
+        matAlphaAnim(mpModel[i_no][1]->getModelData(), 0xff, flag ? false : true);
         mDoExt_modelUpdateDL(mpModel[i_no][1]);
         matAlphaAnim(mpModel[i_no][1]->getModelData(), 0xff, true);
     }
@@ -209,7 +208,7 @@ BOOL daSaku_c::RecreateHeap(int heap_id, int saku_id) {
 }
 
 /* 000008EC-000009B0       .text CreateHeap__8daSaku_cFii */
-bool daSaku_c::CreateHeap(int heap_id, int saku_id) {
+BOOL daSaku_c::CreateHeap(int heap_id, int saku_id) {
     int model_idx = heap_id;
     switch (field_0xef8[saku_id]) {
     case 1:
@@ -223,9 +222,9 @@ bool daSaku_c::CreateHeap(int heap_id, int saku_id) {
         break;
     }
     if (loadModel(model_idx, heap_id, saku_id) == 0) {
-        return false;
+        return FALSE;
     }
-    return loadMoveBG(GetDzbId(saku_id), heap_id, saku_id) != 0;
+    return loadMoveBG(GetDzbId(saku_id), heap_id, saku_id) != 0 ? 1 : 0;
 }
 
 /* 000009B0-00000A4C       .text GetDzbId__8daSaku_cFi */
@@ -249,7 +248,7 @@ int daSaku_c::GetDzbId(int i_idx) {
 }
 
 /* 00000A4C-00000ADC       .text CreateDummyHeap__8daSaku_cFi */
-bool daSaku_c::CreateDummyHeap(int i_no) {
+BOOL daSaku_c::CreateDummyHeap(int i_no) {
     int model_idx;
     if (mSturdinessType == 0) {
         model_idx = 0;
@@ -260,14 +259,13 @@ bool daSaku_c::CreateDummyHeap(int i_no) {
         }
     }
     if (loadModel(model_idx, 1, i_no) == 0) {
-        return false;
+        return FALSE;
     }
-    return loadMoveBG(1, 1, i_no) != 0;
+    return loadMoveBG(1, 1, i_no) != 0 ? 1 : 0;
 }
 
 /* 00000ADC-00000BE8       .text loadMoveBG__8daSaku_cFiii */
 BOOL daSaku_c::loadMoveBG(int dzb_id, int heap_id, int saku_id) {
-    /* Nonmatching - bool/BOOL return truncation */
     int dzb_idx[5] = {
         dRes_INDEX_KSAKUCO_DZB_KSAKU_00_e, dRes_INDEX_KSAKUCO_DZB_KSAKU_01_e,
         dRes_INDEX_KSAKUCO_DZB_KSAKU_02_e, dRes_INDEX_KSAKUCO_DZB_KSAKU_03_e,
@@ -277,7 +275,7 @@ BOOL daSaku_c::loadMoveBG(int dzb_id, int heap_id, int saku_id) {
     if (field_0xe34[saku_id][heap_id] != 0) {
         return field_0xe34[saku_id][heap_id]->Set(
                    (cBgD_t*)dComIfG_getObjectRes(m_arcname[0], dzb_idx[dzb_id]),
-                   cBgW::MOVE_BG_e, &field_0xe4c[saku_id]) != true;
+                   cBgW::MOVE_BG_e, &field_0xe4c[saku_id]) != true ? 1 : 0;
     }
     return FALSE;
 }
@@ -489,7 +487,6 @@ BOOL daSaku_c::setEffFire(int) {
 
 /* 000016C0-000019AC       .text setEffBreak__8daSaku_cFi */
 BOOL daSaku_c::setEffBreak(int i) {
-    /* Nonmatching - instruction order */
     cXyz pos = current.pos;
     pos.y += 100.0f;
     if (i == 1) {
@@ -505,9 +502,8 @@ BOOL daSaku_c::setEffBreak(int i) {
     dust_color.g = l_sakuHIO.field_0x13[1];
     dust_color.b = l_sakuHIO.field_0x13[2];
     field_0xec4[i] = pos;
-    dPa_control_c* pa = g_dComIfG_gameInfo.play.getParticle();
-    pa->set(2, dPa_name::ID_AK_JT_ELEMENTSMOKE01, &field_0xec4[i], &current.angle, NULL,
-            l_sakuHIO.field_0x12, &field_0x290[i], current.roomNo, NULL, NULL, NULL);
+    dComIfGp_particle_setToon(dPa_name::ID_AK_JT_ELEMENTSMOKE01, &field_0xec4[i], &current.angle,
+                              NULL, l_sakuHIO.field_0x12, &field_0x290[i], fopAcM_GetRoomNo(this));
     if (field_0x290[i].getEmitter() != NULL) {
         field_0x290[i].getEmitter()->setGlobalAlpha(255.0f * field_0xeb4[i]);
         field_0x290[i].getEmitter()->becomeImmortalEmitter();
@@ -574,7 +570,6 @@ static cPhs_State daSaku_Create(fopAc_ac_c* i_this) {
 
 /* 00001BB8-00001F28       .text _daSaku_create__8daSaku_cFv */
 cPhs_State daSaku_c::_daSaku_create() {
-    /* Nonmatching - regalloc (bool/BOOL) */
     s32 size = 0;
     fopAcM_SetupActor(this, daSaku_c);
 
@@ -701,9 +696,8 @@ static BOOL daSaku_Draw(daSaku_c* i_this) {
 }
 
 BOOL daSaku_c::_daSaku_execute() {
-    /* Nonmatching - regalloc */
     for (int i = 0; i < 2; i++) {
-        if (field_0xebc[i] != 0 && field_0xebc[i] < m_max_particle_timer) {
+        if (field_0xebc[i] && field_0xebc[i] < m_max_particle_timer) {
             field_0xebc[i]++;
         }
     }
