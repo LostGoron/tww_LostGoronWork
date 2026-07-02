@@ -21,7 +21,7 @@
 #include "JSystem/JUtility/JUTAssert.h"
 #include "SSystem/SComponent/c_phase.h"
 
-static dOw_HIO_c g_owHIO;
+dOw_HIO_c g_owHIO;
 
 /* 8021E58C-8021E5F8       .text __ct__9dOw_HIO_cFv */
 dOw_HIO_c::dOw_HIO_c() {
@@ -134,7 +134,44 @@ int dOperate_wind_c::dOw_stickControl(int ret, s16 ang) {
 
 /* 8021E974-8021ED4C       .text screenSet__15dOperate_wind_cFv */
 void dOperate_wind_c::screenSet() {
-    /* Nonmatching */
+    fopMsgM_setPaneData(&field_0x0c[0], scrn1, 'wdn');
+    fopMsgM_setPaneData(&field_0x0c[1], scrn1, 'wds');
+    fopMsgM_setPaneData(&field_0x0c[2], scrn1, 'wdw');
+    fopMsgM_setPaneData(&field_0x0c[3], scrn1, 'wde');
+    fopMsgM_setPaneData(&field_0x54c, scrn1, 'win');
+    fopMsgM_setPaneData(&field_0x0c[4], scrn1, 'wib');
+    fopMsgM_setPaneData(&field_0x124[0], scrn1, 'wi21');
+    fopMsgM_setPaneData(&field_0x124[1], scrn1, 'wi22');
+    fopMsgM_setPaneData(&field_0x194, scrn1, 'wi2b');
+    fopMsgM_setPaneData(&field_0x1cc[0], scrn1, 'n2');
+    fopMsgM_setPaneData(&field_0x1cc[1], scrn1, 's2');
+    fopMsgM_setPaneData(&field_0x1cc[2], scrn1, 'w2');
+    fopMsgM_setPaneData(&field_0x1cc[3], scrn1, 'e2');
+
+    field_0x1cc[0].pane->hide();
+    field_0x1cc[1].pane->hide();
+    field_0x1cc[2].pane->hide();
+    field_0x1cc[3].pane->hide();
+
+    fopMsgM_setPaneData(&field_0x2ac[0], scrn1, 'str1');
+    fopMsgM_setPaneData(&field_0x2ac[1], scrn1, 'str2');
+    fopMsgM_setPaneData(&field_0x2ac[2], scrn1, 'str3');
+    fopMsgM_setPaneData(&field_0x2ac[3], scrn1, 'str4');
+    fopMsgM_setPaneData(&field_0x2ac[4], scrn1, 'str5');
+    fopMsgM_setPaneData(&field_0x2ac[5], scrn1, 'str6');
+    fopMsgM_setPaneData(&field_0x2ac[6], scrn1, 'str7');
+    fopMsgM_setPaneData(&field_0x2ac[7], scrn1, 'str8');
+    fopMsgM_setPaneData(&field_0x46c[0], scrn1, 'ci04');
+    fopMsgM_setPaneData(&field_0x46c[1], scrn1, 'ci05');
+    fopMsgM_setPaneData(&field_0x46c[2], scrn1, 'ci06');
+    fopMsgM_setPaneData(&field_0x46c[3], scrn1, 'ci07');
+    fopMsgM_setPaneData(&field_0x554, scrn2, 'mask');
+
+    field_0x554.mInitAlpha = 0x82;
+
+    ((J2DPicture*)field_0x54c.pane)->getCornerColor(field_0x568);
+    ((J2DPicture*)field_0x124[0].pane)->getCornerColor(field_0x578);
+    ((J2DPicture*)field_0x554.pane)->getCornerColor(field_0x588);
 }
 
 /* 8021ED4C-8021EE9C       .text alphaSet__15dOperate_wind_cFf */
@@ -161,22 +198,236 @@ void dOperate_wind_c::alphaSet(f32 i_value) {
 
 /* 8021EE9C-8021F550       .text arrowColor1__15dOperate_wind_cFv */
 void dOperate_wind_c::arrowColor1() {
-    /* Nonmatching */
+    JUtility::TColor color2;
+    JUtility::TColor color1;
+    f32 inc;
+
+    field_0x0c[4].mUserArea++;
+    if (field_0x0c[4].mUserArea > 30) {
+        field_0x0c[4].mUserArea = 0;
+    }
+
+    if (field_0x0c[4].mUserArea < 10) {
+        inc = fopMsgM_valueIncrease(10, field_0x0c[4].mUserArea, 0);
+        color1.r = field_0x568.mColor1.r + inc * (field_0x568.mColor0.r - field_0x568.mColor1.r);
+        color1.g = field_0x568.mColor1.g + inc * (field_0x568.mColor0.g - field_0x568.mColor1.g);
+        color1.b = field_0x568.mColor1.b + inc * (field_0x568.mColor0.b - field_0x568.mColor1.b);
+        color1.a = field_0x568.mColor1.a + inc * (field_0x568.mColor0.a - field_0x568.mColor1.a);
+    } else if (field_0x0c[4].mUserArea < 15) {
+        color1 = field_0x568.mColor0;
+    } else if (field_0x0c[4].mUserArea < 25) {
+        inc = fopMsgM_valueIncrease(10, 25 - field_0x0c[4].mUserArea, 0);
+        color1.r = field_0x568.mColor1.r + inc * (field_0x568.mColor0.r - field_0x568.mColor1.r);
+        color1.g = field_0x568.mColor1.g + inc * (field_0x568.mColor0.g - field_0x568.mColor1.g);
+        color1.b = field_0x568.mColor1.b + inc * (field_0x568.mColor0.b - field_0x568.mColor1.b);
+        color1.a = field_0x568.mColor1.a + inc * (field_0x568.mColor0.a - field_0x568.mColor1.a);
+    } else {
+        color1 = field_0x568.mColor1;
+    }
+
+    if (field_0x0c[4].mUserArea < 5) {
+        color2 = field_0x568.mColor0;
+    } else if (field_0x0c[4].mUserArea < 15) {
+        inc = fopMsgM_valueIncrease(10, 15 - field_0x0c[4].mUserArea, 0);
+        color2.r = field_0x568.mColor1.r + inc * (field_0x568.mColor0.r - field_0x568.mColor1.r);
+        color2.g = field_0x568.mColor1.g + inc * (field_0x568.mColor0.g - field_0x568.mColor1.g);
+        color2.b = field_0x568.mColor1.b + inc * (field_0x568.mColor0.b - field_0x568.mColor1.b);
+        color2.a = field_0x568.mColor1.a + inc * (field_0x568.mColor0.a - field_0x568.mColor1.a);
+    } else if (field_0x0c[4].mUserArea < 20) {
+        color2 = field_0x568.mColor1;
+    } else {
+        inc = fopMsgM_valueIncrease(10, field_0x0c[4].mUserArea - 20, 0);
+        color2.r = field_0x568.mColor1.r + inc * (field_0x568.mColor0.r - field_0x568.mColor1.r);
+        color2.g = field_0x568.mColor1.g + inc * (field_0x568.mColor0.g - field_0x568.mColor1.g);
+        color2.b = field_0x568.mColor1.b + inc * (field_0x568.mColor0.b - field_0x568.mColor1.b);
+        color2.a = field_0x568.mColor1.a + inc * (field_0x568.mColor0.a - field_0x568.mColor1.a);
+    }
+
+    ((J2DPicture*)field_0x54c.pane)->setCornerColor(color1, color2, color1, color2);
 }
 
 /* 8021F550-8021FBC0       .text arrowColor2__15dOperate_wind_cFv */
 void dOperate_wind_c::arrowColor2() {
-    /* Nonmatching */
+    s16 time1 = g_owHIO.field_0x14;
+    s16 time2 = g_owHIO.field_0x16;
+    JUtility::TColor color2;
+    JUtility::TColor color1;
+    f32 inc;
+
+    field_0x124[0].mUserArea++;
+    if (field_0x124[0].mUserArea > (s16)(time2 + (time1 + 20))) {
+        field_0x124[0].mUserArea = 0;
+    }
+
+    if (field_0x124[0].mUserArea < 10) {
+        inc = fopMsgM_valueIncrease(10, field_0x124[0].mUserArea, 0);
+        color1.r = field_0x578.mColor0.r + inc * (field_0x578.mColor1.r - field_0x578.mColor0.r);
+        color1.g = field_0x578.mColor0.g + inc * (field_0x578.mColor1.g - field_0x578.mColor0.g);
+        color1.b = field_0x578.mColor0.b + inc * (field_0x578.mColor1.b - field_0x578.mColor0.b);
+    } else if (field_0x124[0].mUserArea < time1 + 10) {
+        color1 = field_0x578.mColor1;
+    } else if (field_0x124[0].mUserArea < time1 + 20) {
+        inc = fopMsgM_valueIncrease(10, time1 + 20 - field_0x124[0].mUserArea, 0);
+        color1.r = field_0x578.mColor0.r + inc * (field_0x578.mColor1.r - field_0x578.mColor0.r);
+        color1.g = field_0x578.mColor0.g + inc * (field_0x578.mColor1.g - field_0x578.mColor0.g);
+        color1.b = field_0x578.mColor0.b + inc * (field_0x578.mColor1.b - field_0x578.mColor0.b);
+    } else {
+        color1 = field_0x578.mColor0;
+    }
+
+    if (field_0x124[0].mUserArea < time1) {
+        color2 = field_0x578.mColor1;
+    } else if (field_0x124[0].mUserArea < time1 + 10) {
+        inc = fopMsgM_valueIncrease(10, time1 + 10 - field_0x124[0].mUserArea, 0);
+        color2.r = field_0x578.mColor0.r + inc * (field_0x578.mColor1.r - field_0x578.mColor0.r);
+        color2.g = field_0x578.mColor0.g + inc * (field_0x578.mColor1.g - field_0x578.mColor0.g);
+        color2.b = field_0x578.mColor0.b + inc * (field_0x578.mColor1.b - field_0x578.mColor0.b);
+    } else if (field_0x124[0].mUserArea < time2 + (time1 + 10)) {
+        color2 = field_0x578.mColor0;
+    } else {
+        inc = fopMsgM_valueIncrease(10, field_0x124[0].mUserArea - (time2 + (time1 + 10)), 0);
+        color2.r = field_0x578.mColor0.r + inc * (field_0x578.mColor1.r - field_0x578.mColor0.r);
+        color2.g = field_0x578.mColor0.g + inc * (field_0x578.mColor1.g - field_0x578.mColor0.g);
+        color2.b = field_0x578.mColor0.b + inc * (field_0x578.mColor1.b - field_0x578.mColor0.b);
+    }
+
+    color1.a = 0xff;
+    color2.a = 0x96;
+
+    ((J2DPicture*)field_0x124[0].pane)->setCornerColor(color2, color1, color2, color1);
+    ((J2DPicture*)field_0x124[1].pane)->setCornerColor(color2, color1, color2, color1);
 }
 
 /* 8021FBC0-80220360       .text maskColor__15dOperate_wind_cFv */
 void dOperate_wind_c::maskColor() {
-    /* Nonmatching */
+    s16 time = g_owHIO.field_0x10;
+    J2DPicture::TCornerColor color;
+    f32 inc;
+
+    field_0x46c[0].mUserArea++;
+    if (field_0x46c[0].mUserArea >= (s16)(time * 4)) {
+        field_0x46c[0].mUserArea = 0;
+    }
+
+    inc = fopMsgM_valueIncrease(time, field_0x46c[0].mUserArea % time, 2);
+
+    color.mColor0.r = field_0x588.mColor0.r + inc * (field_0x588.mColor2.r - field_0x588.mColor0.r);
+    color.mColor0.g = field_0x588.mColor0.g + inc * (field_0x588.mColor2.g - field_0x588.mColor0.g);
+    color.mColor0.b = field_0x588.mColor0.b + inc * (field_0x588.mColor2.b - field_0x588.mColor0.b);
+    color.mColor0.a = field_0x588.mColor0.a + inc * (field_0x588.mColor2.a - field_0x588.mColor0.a);
+    color.mColor1.r = field_0x588.mColor1.r + inc * (field_0x588.mColor0.r - field_0x588.mColor1.r);
+    color.mColor1.g = field_0x588.mColor1.g + inc * (field_0x588.mColor0.g - field_0x588.mColor1.g);
+    color.mColor1.b = field_0x588.mColor1.b + inc * (field_0x588.mColor0.b - field_0x588.mColor1.b);
+    color.mColor1.a = field_0x588.mColor1.a + inc * (field_0x588.mColor0.a - field_0x588.mColor1.a);
+    color.mColor2.r = field_0x588.mColor2.r + inc * (field_0x588.mColor3.r - field_0x588.mColor2.r);
+    color.mColor2.g = field_0x588.mColor2.g + inc * (field_0x588.mColor3.g - field_0x588.mColor2.g);
+    color.mColor2.b = field_0x588.mColor2.b + inc * (field_0x588.mColor3.b - field_0x588.mColor2.b);
+    color.mColor2.a = field_0x588.mColor2.a + inc * (field_0x588.mColor3.a - field_0x588.mColor2.a);
+    color.mColor3.r = field_0x588.mColor3.r + inc * (field_0x588.mColor1.r - field_0x588.mColor3.r);
+    color.mColor3.g = field_0x588.mColor3.g + inc * (field_0x588.mColor1.g - field_0x588.mColor3.g);
+    color.mColor3.b = field_0x588.mColor3.b + inc * (field_0x588.mColor1.b - field_0x588.mColor3.b);
+    color.mColor3.a = field_0x588.mColor3.a + inc * (field_0x588.mColor1.a - field_0x588.mColor3.a);
+
+    if (field_0x46c[0].mUserArea < time) {
+        ((J2DPicture*)field_0x554.pane)->setCornerColor(color.mColor0, color.mColor1, color.mColor2, color.mColor3);
+    } else if (field_0x46c[0].mUserArea < time * 2) {
+        ((J2DPicture*)field_0x554.pane)->setCornerColor(color.mColor2, color.mColor0, color.mColor3, color.mColor1);
+    } else if (field_0x46c[0].mUserArea < time * 3) {
+        ((J2DPicture*)field_0x554.pane)->setCornerColor(color.mColor3, color.mColor2, color.mColor1, color.mColor0);
+    } else {
+        ((J2DPicture*)field_0x554.pane)->setCornerColor(color.mColor1, color.mColor3, color.mColor0, color.mColor2);
+    }
 }
 
 /* 80220360-802207C8       .text arrowDirection__15dOperate_wind_cFv */
 void dOperate_wind_c::arrowDirection() {
-    /* Nonmatching */
+    f32 value = stick->getValueStick();
+    s16 rot = field_0x0c[4].pane->mRotation;
+
+    if (stick->getValueStick() >= 0.9f && fabs(value) - fabs(field_0x8b8) >= 0.0) {
+        int ret = dOw_stickControl(field_0x8d0, stick->getAngleStick());
+        if (field_0x8ca == 0 && ret != field_0x8d0) {
+            field_0x8d0 = ret;
+            switch (ret) {
+            case 8:
+                if (field_0x8cc != 315) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 315;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 7:
+                if (field_0x8cc != 0) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 0;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 6:
+                if (field_0x8cc != 45) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 45;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 5:
+                if (field_0x8cc != 90) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 90;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 4:
+                if (field_0x8cc != 135) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 135;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 3:
+                if (field_0x8cc != 180) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 180;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 2:
+                if (field_0x8cc != 225) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 225;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            case 1:
+                if (field_0x8cc != 270) {
+                    field_0x8ca = 7;
+                    field_0x8cc = 270;
+                    mDoAud_seStart(JA_SE_TAKT_WIND_CURSOR);
+                }
+                break;
+            }
+        }
+    } else if (stick->getValueStick() < 0.9f && fabs(value) - fabs(field_0x8b8) < 0.0) {
+        field_0x8d0 = 0;
+    }
+
+    field_0x8b8 = value;
+    if (field_0x8ca > 0) {
+        field_0x8ca--;
+    }
+
+    s16 diff = field_0x8cc - rot;
+    if (diff > 180) {
+        diff -= 360;
+    } else if (diff < -180) {
+        diff += 360;
+    }
+    if (abs(diff) < 16) {
+        field_0x8ca = 0;
+    }
+
+    rot += (s16)(diff * (1.0f - fopMsgM_valueIncrease(7, field_0x8ca, 0)));
+    arrowRotate(&field_0x0c[4], rot);
 }
 
 /* 802207C8-802208C4       .text windSet__15dOperate_wind_cFv */
@@ -432,7 +683,6 @@ bool dOperate_wind_c::_close() {
 
 /* 80221770-80221830       .text _create__5dOw_cFv */
 void dOw_c::_create() {
-    /* Nonmatching */
     dOw_scrn = new dOperate_wind_c();
     JUT_ASSERT(0x478, dOw_scrn != 0);
     dOw_scrn->_create();
@@ -440,7 +690,6 @@ void dOw_c::_create() {
 
 /* 80221830-80221880       .text _delete__5dOw_cFv */
 void dOw_c::_delete() {
-    /* Nonmatching */
     dOw_scrn->_delete();
     delete dOw_scrn;
 }
@@ -453,7 +702,6 @@ bool dOw_c::_draw() {
 
 /* 80221880-802218B4       .text dOw_Draw__FP5dOw_c */
 static BOOL dOw_Draw(dOw_c* i_this) {
-    /* Nonmatching */
     return i_this->_draw();
 }
 
@@ -473,7 +721,6 @@ void dOw_c::_open() {
 
 /* 802218B4-802219A4       .text dOw_Execute__FP5dOw_c */
 static BOOL dOw_Execute(dOw_c* i_this) {
-    /* Nonmatching */
     static u8 wind_flag = dComIfGp_getOperateWind();
     JKRHeap* old_heap = mDoExt_setCurrentHeap(i_this->getHeap());
     if (dComIfGp_getOperateWind() == 2) {
@@ -516,3 +763,34 @@ static cPhs_State dOw_Create(msg_class* i_msg) {
     mDoExt_setCurrentHeap(old_heap);
     return cPhs_COMPLEATE_e;
 }
+
+/* 80221AA0-80221AFC       .text __dt__15dDlst_Ow_mask_cFv */
+dDlst_Ow_mask_c::~dDlst_Ow_mask_c() {}
+
+/* 80221AFC-80221B58       .text __dt__15dDlst_Ow_main_cFv */
+dDlst_Ow_main_c::~dDlst_Ow_main_c() {}
+
+/* 80221B58-80221BA0       .text __dt__15dOperate_wind_cFv */
+dOperate_wind_c::~dOperate_wind_c() {}
+
+msg_method_class l_dOperate_wind_Method = {
+    (process_method_func)dOw_Create,
+    (process_method_func)dOw_Delete,
+    (process_method_func)dOw_Execute,
+    (process_method_func)dOw_IsDelete,
+    (process_method_func)dOw_Draw,
+};
+
+msg_process_profile_definition g_profile_OPERATE_WIND = {
+    /* Layer ID     */ fpcLy_CURRENT_e,
+    /* List ID      */ 12,
+    /* List Prio    */ fpcPi_CURRENT_e,
+    /* Proc Name    */ fpcNm_OPERATE_WIND_e,
+    /* Proc SubMtd  */ &g_fpcLf_Method.base,
+    /* Size         */ sizeof(dOw_c),
+    /* Size Other   */ 0,
+    /* Parameters   */ 0,
+    /* Leaf SubMtd  */ &g_fopMsg_Method,
+    /* Draw Prio    */ fpcDwPi_OPERATE_WIND_e,
+    /* Msg SubMtd   */ &l_dOperate_wind_Method,
+};

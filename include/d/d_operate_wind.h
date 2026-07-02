@@ -5,6 +5,7 @@
 #include "f_op/f_op_msg.h"
 #include "f_op/f_op_msg_mng.h"
 #include "m_Do/m_Do_hostIO.h"
+#include "JSystem/J2DGraph/J2DPicture.h"
 #include "JSystem/JUtility/TColor.h"
 
 struct fopMsgM_pane_class;
@@ -40,6 +41,8 @@ public:
     
     void draw();
 
+    virtual ~dDlst_Ow_main_c();
+
 public:
     /* 0x004 */ J2DScreen* scrn;
     /* 0x008 */ JUtility::TColor color;
@@ -56,27 +59,16 @@ public:
     
     void draw();
 
+    virtual ~dDlst_Ow_mask_c();
+
 public:
     /* 0x004 */ J2DScreen* scrn;
 };
 
 class dOperate_wind_c {
 public:
-    dOperate_wind_c() {
-        field_0x568[0] = -1;
-        field_0x568[1] = -1;
-        field_0x568[2] = -1;
-        field_0x568[3] = -1;
-        field_0x568[4] = -1;
-        field_0x568[5] = -1;
-        field_0x568[6] = -1;
-        field_0x568[7] = -1;
-        field_0x568[8] = -1;
-        field_0x568[9] = -1;
-        field_0x568[10] = -1;
-        field_0x568[11] = -1;
-    }
-    virtual ~dOperate_wind_c() {}
+    dOperate_wind_c() {}
+    virtual ~dOperate_wind_c();
     void setTimer(s16 t) { field_0x8c8 = t; }
     
     int dOw_angleRegular(f32);
@@ -115,7 +107,9 @@ public:
     /* 0x55C */ STControl* stick;
     /* 0x560 */ dDlst_Ow_main_c* mMain;
     /* 0x564 */ dDlst_Ow_mask_c* mMask;
-    /* 0x568 */ int field_0x568[12];
+    /* 0x568 */ J2DPicture::TCornerColor field_0x568;
+    /* 0x578 */ J2DPicture::TCornerColor field_0x578;
+    /* 0x588 */ J2DPicture::TCornerColor field_0x588;
     /* 0x598 */ f32 field_0x598[50];
     /* 0x660 */ f32 field_0x660[50];
     /* 0x728 */ f32 field_0x728[50];
