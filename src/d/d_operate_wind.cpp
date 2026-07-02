@@ -6,7 +6,13 @@
 #include "d/dolzel.h" // IWYU pragma: keep
 #include "d/d_operate_wind.h"
 #include "d/d_com_inf_game.h"
+#include "d/d_kankyo_wether.h"
+#include "d/d_lib.h"
+#include "d/d_meter.h"
+#include "d/d_s_play.h"
 #include "f_op/f_op_msg_mng.h"
+#include "JSystem/J2DGraph/J2DPicture.h"
+#include "m_Do/m_Do_controller_pad.h"
 #include "m_Do/m_Do_ext.h"
 #include "JSystem/J2DGraph/J2DOrthoGraph.h"
 #include "JSystem/J2DGraph/J2DScreen.h"
@@ -15,8 +21,10 @@
 #include "JSystem/JUtility/JUTAssert.h"
 #include "SSystem/SComponent/c_phase.h"
 
+static dOw_HIO_c g_owHIO;
+
 /* 8021E58C-8021E5F8       .text __ct__9dOw_HIO_cFv */
-dOw_HIO_c::dOw_HIO_c() {                           
+dOw_HIO_c::dOw_HIO_c() {
     field_0x08 = 0x1e;
     field_0x0a = 0x5f;
     field_0x0c = 0x9b;
@@ -130,8 +138,25 @@ void dOperate_wind_c::screenSet() {
 }
 
 /* 8021ED4C-8021EE9C       .text alphaSet__15dOperate_wind_cFf */
-void dOperate_wind_c::alphaSet(f32) {
-    /* Nonmatching */
+void dOperate_wind_c::alphaSet(f32 i_value) {
+    fopMsgM_setNowAlpha(&field_0x0c[0], i_value);
+    fopMsgM_setNowAlpha(&field_0x0c[1], i_value);
+    fopMsgM_setNowAlpha(&field_0x0c[2], i_value);
+    fopMsgM_setNowAlpha(&field_0x0c[3], i_value);
+    fopMsgM_setNowAlpha(&field_0x54c, i_value);
+    for (int i = 0; i < 2; i++) {
+        fopMsgM_setNowAlpha(&field_0x124[i], i_value);
+    }
+    fopMsgM_setNowAlpha(&field_0x194, i_value);
+    for (int i = 0; i < 4; i++) {
+        fopMsgM_setNowAlpha(&field_0x1cc[i], i_value);
+    }
+    for (int i = 0; i < 8; i++) {
+        fopMsgM_setNowAlpha(&field_0x2ac[i], i_value);
+    }
+    fopMsgM_setNowAlpha(&field_0x46c[0], i_value);
+    fopMsgM_setNowAlpha(&field_0x554, i_value);
+    field_0x8d4 = g_owHIO.field_0x18 * i_value;
 }
 
 /* 8021EE9C-8021F550       .text arrowColor1__15dOperate_wind_cFv */
@@ -156,74 +181,260 @@ void dOperate_wind_c::arrowDirection() {
 
 /* 802207C8-802208C4       .text windSet__15dOperate_wind_cFv */
 void dOperate_wind_c::windSet() {
-    /* Nonmatching */
+    switch (field_0x8cc) {
+    case 315:
+        dKyw_tact_wind_set(0, -0x6000);
+        break;
+    case 0:
+        dKyw_tact_wind_set(0, -0x8000);
+        break;
+    case 45:
+        dKyw_tact_wind_set(0, 0x6000);
+        break;
+    case 90:
+        dKyw_tact_wind_set(0, 0x4000);
+        break;
+    case 135:
+        dKyw_tact_wind_set(0, 0x2000);
+        break;
+    case 180:
+        dKyw_tact_wind_set(0, 0);
+        break;
+    case 225:
+        dKyw_tact_wind_set(0, -0x2000);
+        break;
+    case 270:
+        dKyw_tact_wind_set(0, -0x4000);
+        break;
+    }
 }
 
 /* 802208C4-8022098C       .text ringScale__15dOperate_wind_cFf */
-void dOperate_wind_c::ringScale(f32) {
-    /* Nonmatching */
+void dOperate_wind_c::ringScale(f32 i_scale) {
+    for (int i = 0; i < 4; i++) {
+        if (i == 0) {
+            field_0x46c[i].mPosCenter.x = field_0x8c0 + i_scale * (field_0x46c[i].mPosCenterOrig.x - field_0x8c0);
+            field_0x46c[i].mPosCenter.y = field_0x8c4 + i_scale * (field_0x46c[i].mPosCenterOrig.y - field_0x8c4);
+        } else {
+            field_0x46c[i].mPosCenter.x = field_0x46c[i].mPosCenterOrig.x * i_scale;
+            field_0x46c[i].mPosCenter.y = field_0x46c[i].mPosCenterOrig.y * i_scale;
+        }
+        fopMsgM_paneScaleXY(&field_0x46c[i], i_scale);
+    }
 }
 
 /* 8022098C-80220A60       .text directionTrans__15dOperate_wind_cFf */
-void dOperate_wind_c::directionTrans(f32) {
-    /* Nonmatching */
+void dOperate_wind_c::directionTrans(f32 i_value) {
+    f32 trans = 80.0f * i_value;
+    fopMsgM_paneTrans(&field_0x0c[0], 0.0f, trans);
+    fopMsgM_paneTrans(&field_0x0c[1], 0.0f, -trans);
+    fopMsgM_paneTrans(&field_0x0c[2], trans, 0.0f);
+    fopMsgM_paneTrans(&field_0x0c[3], -trans, 0.0f);
+    fopMsgM_paneTrans(&field_0x1cc[0], 0.0f, trans);
+    fopMsgM_paneTrans(&field_0x1cc[1], 0.0f, -trans);
+    fopMsgM_paneTrans(&field_0x1cc[2], trans, 0.0f);
+    fopMsgM_paneTrans(&field_0x1cc[3], -trans, 0.0f);
 }
 
 /* 80220A60-80220CD8       .text lineInit__15dOperate_wind_cFf */
-void dOperate_wind_c::lineInit(f32) {
-    /* Nonmatching */
+void dOperate_wind_c::lineInit(f32 i_value) {
+    f32 length = -((-172.0f - REG6_F(5)) * i_value);
+    f32 diff = field_0x2ac[0].mPosTopLeftOrig.y - field_0x194.mPosCenterOrig.y;
+    f32 radius = diff * i_value;
+    f32 cx, cy, rad;
+    f32 step = 360.0f / field_0x8ce;
+    f32 angle = 11.25f;
+    for (int i = 0; i < field_0x8ce; i++) {
+
+        if (i % 2) {
+            rad = 3.1415927f * ((101.25f + angle) / 180.0f);
+            f32 s = sin(rad);
+            cx = field_0x8c0 + radius * s;
+            f32 c = cos(rad);
+            cy = field_0x8c4 + radius * c;
+        } else {
+            rad = 3.1415927f * ((78.75f + angle) / 180.0f);
+            f32 s = sin(rad);
+            cx = field_0x8c0 + radius * s;
+            f32 c = cos(rad);
+            cy = field_0x8c4 + radius * c;
+        }
+        f32 rad2 = 3.1415927f * (angle / 180.0f);
+        field_0x598[i] = cx + length * (f32)sin(rad2);
+        field_0x660[i] = cy + length * (f32)cos(rad2);
+        field_0x728[i] = 2.0f * cx - field_0x598[i];
+        field_0x7f0[i] = 2.0f * cy - field_0x660[i];
+        if (i % 2) {
+            field_0x598[i] = cx;
+            field_0x660[i] = cy;
+        } else {
+            field_0x728[i] = cx;
+            field_0x7f0[i] = cy;
+        }
+        angle += step;
+    }
 }
 
 /* 80220CD8-80220D80       .text lineDraw__15dOperate_wind_cFv */
 void dOperate_wind_c::lineDraw() {
-    /* Nonmatching */
+    JUtility::TColor color(0xFF, 0xFF, 0xFF, field_0x8d4);
+    mMain->setLineColor(color);
+    mMain->setLineMax(field_0x8ce);
+    f32 x1, y1, x2, y2;
+    for (int i = 0; i < field_0x8ce; i++) {
+        y2 = field_0x7f0[i];
+        x2 = field_0x728[i];
+        y1 = field_0x660[i];
+        dDlst_Ow_main_c* main = mMain;
+        x1 = field_0x598[i];
+        main->mX1[i] = x1;
+        main->mY1[i] = y1;
+        main->mX2[i] = x2;
+        main->mY2[i] = y2;
+    }
 }
 
 /* 80220D80-80220E18       .text arrowRotate__15dOperate_wind_cFP18fopMsgM_pane_classs */
-void dOperate_wind_c::arrowRotate(fopMsgM_pane_class*, s16) {
-    /* Nonmatching */
+void dOperate_wind_c::arrowRotate(fopMsgM_pane_class* i_pane, s16 i_ang) {
+    if (i_ang < 0) {
+        i_ang += 360;
+    }
+    if (i_ang > 360) {
+        i_ang -= 360;
+    }
+    i_pane->pane->rotate(i_pane->mSizeOrig.x / 2.0f, i_pane->mSizeOrig.y / 2.0f, ROTATE_Z, (f32)i_ang);
 }
 
 /* 80220E18-80221090       .text initialize__15dOperate_wind_cFv */
 void dOperate_wind_c::initialize() {
-    /* Nonmatching */
+    field_0x8c8 = 0;
+    field_0x8ca = 0;
+    field_0x8ce = g_owHIO.field_0x0e;
+    field_0x8d4 = 0;
+    field_0x8d0 = 0;
+    field_0x0c[4].mUserArea = 0;
+    field_0x46c[0].mUserArea = 0;
+    field_0x124[0].mUserArea = 30;
+    field_0x124[1].mUserArea = 35;
+    ((J2DPicture*)field_0x124[0].pane)->setCornerColor(0xFFFFFF96, 0x00FFFFFF, 0xFFFFFF96, 0x00FFFFFF);
+    ((J2DPicture*)field_0x124[1].pane)->setCornerColor(0xFFFFFF96, 0x00FFFFFF, 0xFFFFFF96, 0x00FFFFFF);
+    field_0x8c0 = field_0x46c[0].mPosTopLeftOrig.x + field_0x46c[0].mSizeOrig.x;
+    field_0x8c4 = field_0x46c[0].mPosTopLeftOrig.y;
+    cXyz* wind = dKyw_get_wind_vec();
+    s16 angle = cM_atan2s(wind->x, wind->z) + 0x8000;
+    field_0x8cc = dOw_angleRegular(180.0f * angle / 32768.0f - 90.0f);
+    arrowRotate(&field_0x0c[4], field_0x8cc);
+    arrowRotate(&field_0x194, field_0x8cc + 90);
+    field_0x8b8 = stick->getValueStick();
+    lineInit(0.0f);
 }
 
 /* 80221090-802213B0       .text _create__15dOperate_wind_cFv */
 void dOperate_wind_c::_create() {
-    /* Nonmatching */
+    scrn1 = new J2DScreen();
+    JUT_ASSERT(0x3de, scrn1 != 0);
+    scrn1->set("operate_wind.blo", dComIfGp_getWindResArchive());
+    scrn2 = new J2DScreen();
+    JUT_ASSERT(0x3e2, scrn2 != 0);
+    scrn2->set("operate_wind_mask.blo", dComIfGp_getWindResArchive());
+    stick = new STControl(5, 2, 3, 2, 1.0f, 1.0f, 0x1000, 0x2000);
+    JUT_ASSERT(0x3e6, stick != 0);
+    mMain = new dDlst_Ow_main_c();
+    JUT_ASSERT(0x3e9, mMain != 0);
+    mMain->setScreen(scrn1);
+    mMask = new dDlst_Ow_mask_c();
+    JUT_ASSERT(0x3ed, mMask != 0);
+    mMask->setScreen(scrn2);
+    screenSet();
+    initialize();
 }
 
 /* 802213B0-8022147C       .text _delete__15dOperate_wind_cFv */
 void dOperate_wind_c::_delete() {
-    /* Nonmatching */
+    delete scrn1;
+    delete scrn2;
+    delete stick;
+    delete mMain;
+    delete mMask;
+    dComIfGp_getWindResArchive()->removeResourceAll();
 }
 
 /* 8022147C-8022151C       .text _move__15dOperate_wind_cFv */
 void dOperate_wind_c::_move() {
-    /* Nonmatching */
+    if (!dMenu_flag()) {
+        if (CPad_CHECK_TRIG_A(0)) {
+            windSet();
+            dComIfGp_setOperateWindChangeOff();
+        } else if (CPad_CHECK_TRIG_B(0)) {
+            dComIfGp_setOperateWindCancelOff();
+        }
+        arrowColor1();
+        arrowColor2();
+        maskColor();
+        arrowDirection();
+    }
 }
 
 /* 8022151C-8022163C       .text _draw__15dOperate_wind_cFv */
 void dOperate_wind_c::_draw() {
-    /* Nonmatching */
+    fopMsgM_setAlpha(&field_0x0c[0]);
+    fopMsgM_setAlpha(&field_0x0c[1]);
+    fopMsgM_setAlpha(&field_0x0c[2]);
+    fopMsgM_setAlpha(&field_0x0c[3]);
+    fopMsgM_setAlpha(&field_0x54c);
+    for (int i = 0; i < 2; i++) {
+        fopMsgM_setAlpha(&field_0x124[i]);
+    }
+    fopMsgM_setAlpha(&field_0x194);
+    for (int i = 0; i < 4; i++) {
+        fopMsgM_setAlpha(&field_0x1cc[i]);
+    }
+    for (int i = 0; i < 8; i++) {
+        fopMsgM_setAlpha(&field_0x2ac[i]);
+    }
+    fopMsgM_setAlpha(&field_0x46c[0]);
+    fopMsgM_setAlpha(&field_0x554);
+    lineDraw();
+    dComIfGd_set2DOpa(mMask);
+    dComIfGd_set2DOpa(mMain);
 }
 
 /* 8022163C-802216F0       .text _open__15dOperate_wind_cFv */
 bool dOperate_wind_c::_open() {
-    /* Nonmatching */
+    bool set = false;
+    if (field_0x8c8 < 10) {
+        field_0x8c8++;
+        f32 value = fopMsgM_valueIncrease(10, field_0x8c8, 0);
+        alphaSet(value);
+        ringScale(value);
+        directionTrans(fopMsgM_valueIncrease(10, 10 - field_0x8c8, 0));
+        lineInit(value);
+    }
+    if (field_0x8c8 >= 10) {
+        set = true;
+    }
+    return set;
 }
 
 /* 802216F0-80221770       .text _close__15dOperate_wind_cFv */
 bool dOperate_wind_c::_close() {
-    /* Nonmatching */
+    s16 time = g_owHIO.field_0x18;
+    bool set = false;
+    if (field_0x8c8 > 0) {
+        field_0x8c8--;
+        alphaSet(fopMsgM_valueIncrease(time, field_0x8c8, 0));
+    }
+    if (field_0x8c8 <= 0) {
+        set = true;
+    }
+    return set;
 }
 
 /* 80221770-80221830       .text _create__5dOw_cFv */
 void dOw_c::_create() {
     /* Nonmatching */
     dOw_scrn = new dOperate_wind_c();
-    JUT_ASSERT(0x478, dOw_scrn != NULL);
+    JUT_ASSERT(0x478, dOw_scrn != 0);
     dOw_scrn->_create();
 }
 
@@ -268,7 +479,9 @@ static BOOL dOw_Execute(dOw_c* i_this) {
     if (dComIfGp_getOperateWind() == 2) {
         i_this->_open();
     } else {
-        // i_this->dOw_scrn->setTimer ?
+        if (wind_flag == 2) {
+            i_this->setTimer(g_owHIO.field_0x08);
+        }
         i_this->_close();
     }
     wind_flag = dComIfGp_getOperateWind();
@@ -295,7 +508,7 @@ static cPhs_State dOw_Create(msg_class* i_msg) {
     dOw_c* i_this = (dOw_c*)i_msg;
 
     JKRExpHeap* heap = fopMsgM_createExpHeap(20000);
-    JUT_ASSERT(0x547, heap != NULL);
+    JUT_ASSERT(0x547, heap != 0);
     i_this->setHeap(heap);
     JKRHeap* old_heap = mDoExt_setCurrentHeap(i_this->getHeap());
     i_this->field_0x104 = 1; /* setStatus? */

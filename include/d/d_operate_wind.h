@@ -52,7 +52,7 @@ public:
 
 class dDlst_Ow_mask_c : public dDlst_base_c {
 public:
-    void setScreen(J2DScreen*) {}
+    void setScreen(J2DScreen* s) { scrn = s; }
     
     void draw();
 
@@ -62,10 +62,24 @@ public:
 
 class dOperate_wind_c {
 public:
+    dOperate_wind_c() {
+        field_0x568[0] = -1;
+        field_0x568[1] = -1;
+        field_0x568[2] = -1;
+        field_0x568[3] = -1;
+        field_0x568[4] = -1;
+        field_0x568[5] = -1;
+        field_0x568[6] = -1;
+        field_0x568[7] = -1;
+        field_0x568[8] = -1;
+        field_0x568[9] = -1;
+        field_0x568[10] = -1;
+        field_0x568[11] = -1;
+    }
     virtual ~dOperate_wind_c() {}
-    void setTimer(s16) {}
+    void setTimer(s16 t) { field_0x8c8 = t; }
     
-    static int dOw_angleRegular(f32);
+    int dOw_angleRegular(f32);
     int dOw_stickControl(int, s16);
     void screenSet();
     void alphaSet(f32);
@@ -101,7 +115,23 @@ public:
     /* 0x55C */ STControl* stick;
     /* 0x560 */ dDlst_Ow_main_c* mMain;
     /* 0x564 */ dDlst_Ow_mask_c* mMask;
-};
+    /* 0x568 */ int field_0x568[12];
+    /* 0x598 */ f32 field_0x598[50];
+    /* 0x660 */ f32 field_0x660[50];
+    /* 0x728 */ f32 field_0x728[50];
+    /* 0x7F0 */ f32 field_0x7f0[50];
+    /* 0x8B8 */ f32 field_0x8b8;
+    /* 0x8BC */ u8 field_0x8bc[0x8C0 - 0x8BC];
+    /* 0x8C0 */ f32 field_0x8c0;
+    /* 0x8C4 */ f32 field_0x8c4;
+    /* 0x8C8 */ s16 field_0x8c8;
+    /* 0x8CA */ s16 field_0x8ca;
+    /* 0x8CC */ s16 field_0x8cc;
+    /* 0x8CE */ s16 field_0x8ce;
+    /* 0x8D0 */ int field_0x8d0;
+    /* 0x8D4 */ u8 field_0x8d4;
+    /* 0x8D5 */ u8 field_0x8d5[0x8D8 - 0x8D5];
+};  // Size: 0x8D8
 
 class dOw_c : public msg_class {
 public:
@@ -113,7 +143,7 @@ public:
     void getStatus() {}
     void setHeap(JKRExpHeap* h) { heap = h; }
     void setStatus(u8) {}
-    void setTimer(s16) {}
+    void setTimer(s16 t) { dOw_scrn->setTimer(t); }
 
     void _create();
     void _delete();
