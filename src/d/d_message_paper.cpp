@@ -6,6 +6,10 @@
 #include "d/dolzel.h" // IWYU pragma: keep
 #include "d/d_message_paper.h"
 #include "f_op/f_op_msg.h"
+#include "d/d_meter.h"
+#include "m_Do/m_Do_controller_pad.h"
+#include "JSystem/J3DGraphLoader/J3DModelLoader.h"
+#include "JSystem/J3DGraphLoader/J3DAnmLoader.h"
 
 /* 801EB128-801EB420       .text setDummyTexture__10dmsg3_3d_cFv */
 void dmsg3_3d_c::setDummyTexture() {
@@ -13,13 +17,13 @@ void dmsg3_3d_c::setDummyTexture() {
 }
 
 /* 801EB420-801EB444       .text loadModelData__FPUc */
-void loadModelData(u8*) {
-    /* Nonmatching */
+void loadModelData(u8* i_data) {
+    J3DModelLoaderDataBase::loadBinaryDisplayList(i_data, 0x1020);
 }
 
 /* 801EB444-801EB464       .text loadAnmTransformData__FPUc */
-void loadAnmTransformData(u8*) {
-    /* Nonmatching */
+void loadAnmTransformData(u8* i_data) {
+    J3DAnmLoaderDataBase::load(i_data);
 }
 
 /* 801EB464-801EB6FC       .text __ct__10dmsg3_3d_cFv */
@@ -58,13 +62,15 @@ void dMsg3_setString(sub_msg3_class*, u8) {
 }
 
 /* 801EBAB4-801EBAD8       .text dMsg3_messagePaneShow__FP14sub_msg3_classUc */
-void dMsg3_messagePaneShow(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_messagePaneShow(sub_msg3_class* i_this, u8 i_idx) {
+    i_this->field_0x90c[i_idx].pane->show();
+    i_this->field_0xa5c[i_idx].pane->show();
 }
 
 /* 801EBAD8-801EBAFC       .text dMsg3_messagePaneHide__FP14sub_msg3_classUc */
-void dMsg3_messagePaneHide(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_messagePaneHide(sub_msg3_class* i_this, u8 i_idx) {
+    i_this->field_0x90c[i_idx].pane->hide();
+    i_this->field_0xa5c[i_idx].pane->hide();
 }
 
 /* 801EBAFC-801EBBD0       .text dMsg3_outFontHide__FUc */
@@ -73,33 +79,39 @@ void dMsg3_outFontHide(u8) {
 }
 
 /* 801EBBD0-801EBC08       .text dMsg3_arrowUpShow__FP14sub_msg3_class */
-void dMsg3_arrowUpShow(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_arrowUpShow(sub_msg3_class* i_this) {
+    fopMsgM_setInitAlpha(&i_this->field_0xbac[0]);
+    fopMsgM_setInitAlpha(&i_this->field_0xbac[1]);
 }
 
 /* 801EBC08-801EBC40       .text dMsg3_arrowUpHide__FP14sub_msg3_class */
-void dMsg3_arrowUpHide(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_arrowUpHide(sub_msg3_class* i_this) {
+    fopMsgM_setNowAlphaZero(&i_this->field_0xbac[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xbac[1]);
 }
 
 /* 801EBC40-801EBC78       .text dMsg3_arrowDownShow__FP14sub_msg3_class */
-void dMsg3_arrowDownShow(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_arrowDownShow(sub_msg3_class* i_this) {
+    fopMsgM_setInitAlpha(&i_this->field_0xc1c[0]);
+    fopMsgM_setInitAlpha(&i_this->field_0xc1c[1]);
 }
 
 /* 801EBC78-801EBCB0       .text dMsg3_arrowDownHide__FP14sub_msg3_class */
-void dMsg3_arrowDownHide(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_arrowDownHide(sub_msg3_class* i_this) {
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc1c[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc1c[1]);
 }
 
 /* 801EBCB0-801EBCE8       .text dMsg3_dotShow__FP14sub_msg3_class */
-void dMsg3_dotShow(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_dotShow(sub_msg3_class* i_this) {
+    fopMsgM_setInitAlpha(&i_this->field_0xc8c[0]);
+    fopMsgM_setInitAlpha(&i_this->field_0xc8c[1]);
 }
 
 /* 801EBCE8-801EBD20       .text dMsg3_dotHide__FP14sub_msg3_class */
-void dMsg3_dotHide(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_dotHide(sub_msg3_class* i_this) {
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc8c[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc8c[1]);
 }
 
 /* 801EBD20-801EBDE4       .text dMsg3_multiTexInit__FP14sub_msg3_class */
@@ -113,8 +125,9 @@ void dMsg3_fontdataInit(sub_msg3_class*) {
 }
 
 /* 801EBE94-801EBED8       .text dMsg3_screenDataSet__FP14sub_msg3_classUc */
-void dMsg3_screenDataSet(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_screenDataSet(sub_msg3_class* i_this, u8 i_idx) {
+    dMsg3_value_init(i_this, i_idx);
+    dMsg3_setString(i_this, i_idx);
 }
 
 /* 801EBED8-801EC52C       .text dMsg3_screenDataInit__FP14sub_msg3_classUc */
@@ -128,8 +141,15 @@ void dMsg3_ScreenDataValueInit(sub_msg3_class*) {
 }
 
 /* 801EC638-801EC690       .text dMsg3_stickInfoInit__FP14sub_msg3_class */
-void dMsg3_stickInfoInit(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_stickInfoInit(sub_msg3_class* i_this) {
+    // 0xB8 == g_mDoCPd_cpadInfo[3].mMainStickPosY (offset-derived; pad index unverified)
+    if (g_mDoCPd_cpadInfo[0].mMainStickPosY > 0.7f || g_mDoCPd_cpadInfo[3].mMainStickPosY > 0.7f) {
+        i_this->field_0xed9 = 1;
+    } else if (g_mDoCPd_cpadInfo[0].mMainStickPosY < 0.7f || g_mDoCPd_cpadInfo[3].mMainStickPosY < 0.7f) {
+        i_this->field_0xed9 = 2;
+    } else {
+        i_this->field_0xed9 = 0;
+    }
 }
 
 /* 801EC690-801EC714       .text dMsg3_stickInfoCheck__FP14sub_msg3_class */
@@ -153,8 +173,16 @@ void dMsg3_textPosition(sub_msg3_class*, u8) {
 }
 
 /* 801EC97C-801EC9F0       .text dMsg3_rubySet__FP14sub_msg3_class */
-void dMsg3_rubySet(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_rubySet(sub_msg3_class* i_this) {
+    if (i_this->mStatus == 5 || i_this->mStatus == 6 || i_this->mStatus == 7 || i_this->mStatus == 10) {
+        for (int i = 0; i < 3; i++) {
+            if (g_messageHIO.field_0x4b == 0) {
+                i_this->field_0xa5c[i].pane->hide();
+            } else {
+                i_this->field_0xa5c[i].pane->show();
+            }
+        }
+    }
 }
 
 /* 801EC9F0-801ECC08       .text dMsg3_arrowMove__FP14sub_msg3_class */
@@ -173,13 +201,17 @@ void dMsg3_aimAlphaSqrt(sub_msg3_class*, int, int) {
 }
 
 /* 801ECE04-801ECEA0       .text dMsg3_kankyoBrightness__Fv */
-void dMsg3_kankyoBrightness() {
+int dMsg3_kankyoBrightness() {
     /* Nonmatching */
 }
 
 /* 801ECEA0-801ECEEC       .text dMsg3_aimBrightness__Fv */
-void dMsg3_aimBrightness() {
-    /* Nonmatching */
+u8 dMsg3_aimBrightness() {
+    int brightness = dMsg3_kankyoBrightness();
+    if ((u8)brightness > g_messageHIO.field_0x29) {
+        return 0xff - (brightness - g_messageHIO.field_0x29);
+    }
+    return 0xff;
 }
 
 /* 801ECEEC-801ED2C8       .text dMsg3_setCharAlpha__FP14sub_msg3_classUc */
@@ -244,7 +276,7 @@ static BOOL dMsg3_Execute(sub_msg3_class*) {
 
 /* 801EE740-801EE748       .text dMsg3_IsDelete__FP14sub_msg3_class */
 static BOOL dMsg3_IsDelete(sub_msg3_class*) {
-    /* Nonmatching */
+    return TRUE;
 }
 
 /* 801EE748-801EE904       .text dMsg3_Delete__FP14sub_msg3_class */
