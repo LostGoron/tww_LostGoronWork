@@ -49,6 +49,10 @@ public:
     static s32 m_saku_alpha_out_time;
     static s32 m_fade_time;
     static const s32 m_max_particle_timer;
+    static const u8 m_start_alpha;
+    static const u16 m_alpha_spd;
+    static const f32 m_saku_height;
+    static const dCcD_SrcCyl m_at_cyl_src;
 
 public:
     /* 0x290 */ dPa_smokeEcallBack field_0x290[2];

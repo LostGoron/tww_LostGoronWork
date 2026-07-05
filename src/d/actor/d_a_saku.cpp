@@ -730,12 +730,51 @@ BOOL daSaku_c::_daSaku_execute() {
     return TRUE;
 }
 
+// These const statics must be defined here, between the _daSaku_execute
+// inline body (parsed above, initializer not yet visible, so the
+// m_max_particle_timer read stays a memory load) and the daSaku_Execute
+// dispatcher that instantiates it (definition already seen by codegen,
+// so the objects land in .rodata). Defining them earlier folds the load
+// into an immediate; defining them later demotes them to .data.
+const s32 daSaku_c::m_max_particle_timer = 2000;
+const u8 daSaku_c::m_start_alpha = 0xB4;
+const u16 daSaku_c::m_alpha_spd = 5;
+const f32 daSaku_c::m_saku_height = 200.0f;
+
+const dCcD_SrcCyl daSaku_c::m_at_cyl_src = {
+    // dCcD_SrcGObjInf
+    {
+        /* Flags             */ 0,
+        /* SrcObjAt  Type    */ AT_TYPE_FIRE | AT_TYPE_UNK20000,
+        /* SrcObjAt  Atp     */ 1,
+        /* SrcObjAt  SPrm    */ cCcD_AtSPrm_Set_e | cCcD_AtSPrm_GrpAll_e,
+        /* SrcObjTg  Type    */ 0,
+        /* SrcObjTg  SPrm    */ 0,
+        /* SrcObjCo  SPrm    */ 0,
+        /* SrcGObjAt Se      */ 0,
+        /* SrcGObjAt HitMark */ dCcG_AtHitMark_None_e,
+        /* SrcGObjAt Spl     */ dCcG_At_Spl_UNK0,
+        /* SrcGObjAt Mtrl    */ 0,
+        /* SrcGObjAt SPrm    */ dCcG_AtSPrm_NoConHit_e,
+        /* SrcGObjTg Se      */ 0,
+        /* SrcGObjTg HitMark */ 0,
+        /* SrcGObjTg Spl     */ dCcG_Tg_Spl_UNK0,
+        /* SrcGObjTg Mtrl    */ 0,
+        /* SrcGObjTg SPrm    */ dCcG_TgSPrm_NoConHit_e | dCcG_TgSPrm_NoHitMark_e,
+        /* SrcGObjCo SPrm    */ 0,
+    },
+    // cM3dGCylS
+    {{
+        /* Center */ {0.0f, 0.0f, 0.0f},
+        /* Radius */ 50.0f,
+        /* Height */ 400.0f,
+    }},
+};
+
 /* 0000242C-00002560       .text daSaku_Execute__FP8daSaku_c */
 static BOOL daSaku_Execute(daSaku_c* i_this) {
     return i_this->_daSaku_execute();
 }
-
-const s32 daSaku_c::m_max_particle_timer = 2000;
 
 const dCcD_SrcCyl daSaku_c::m_cyl_src = {
     // dCcD_SrcGObjInf
