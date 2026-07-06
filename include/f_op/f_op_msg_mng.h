@@ -150,7 +150,7 @@ public:
     void dataInit();
     f32 charLength(int, int, bool);
     f32 rubyLength(int, bool);
-    void stringLength();
+    int stringLength();
     void stringShift();
     void iconSelect(int, u8);
     void iconIdxRefresh();

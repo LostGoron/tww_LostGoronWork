@@ -1742,7 +1742,7 @@ f32 fopMsgM_msgDataProc_c::rubyLength(int param_1, bool param_2) {
 }
 
 /* 8002EB4C-80031064       .text stringLength__21fopMsgM_msgDataProc_cFv */
-void fopMsgM_msgDataProc_c::stringLength() {
+int fopMsgM_msgDataProc_c::stringLength() {
     /* Nonmatching */
 }
 

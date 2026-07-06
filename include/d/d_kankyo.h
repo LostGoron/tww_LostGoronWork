@@ -418,6 +418,7 @@ void dKy_plight_priority_set(LIGHT_INFLUENCE*);
 void dKy_efplight_set(LIGHT_INFLUENCE* param_0);
 void dKy_plight_cut(LIGHT_INFLUENCE* param_0);
 cXyz dKy_plight_near_pos();
+GXColorS10* dKy_Get_DifCol();
 void dKy_efplight_cut(LIGHT_INFLUENCE* param_0);
 void dKy_fog_startendz_set(f32, f32, f32);
 int dKy_daynight_check();

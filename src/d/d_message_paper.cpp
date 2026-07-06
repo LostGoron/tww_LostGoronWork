@@ -7,58 +7,157 @@
 #include "d/d_message_paper.h"
 #include "f_op/f_op_msg.h"
 #include "d/d_meter.h"
+#include "d/d_kankyo.h"
 #include "m_Do/m_Do_controller_pad.h"
+#include "m_Do/m_Do_ext.h"
+#include "m_Do/m_Do_mtx.h"
+#include "m_Do/m_Do_graphic.h"
+#include "JSystem/J3DGraphAnimator/J3DModel.h"
+#include "JSystem/J3DGraphBase/J3DTexture.h"
+#include "JSystem/JUtility/JUTNameTab.h"
+#include "JSystem/JKernel/JKRArchive.h"
+#include "d/d_drawlist.h"
+#include "dolphin/os/OSCache.h"
+#include "stdio.h"
+#include <string.h>
 #include "JSystem/J3DGraphLoader/J3DModelLoader.h"
 #include "JSystem/J3DGraphLoader/J3DAnmLoader.h"
+#include "JSystem/J2DGraph/J2DTextBox.h"
+#include "JSystem/J2DGraph/J2DScreen.h"
+#include "JSystem/J2DGraph/J2DOrthoGraph.h"
+#include "JSystem/JUtility/JUTAssert.h"
+#include "JAZelAudio/JAIZelBasic.h"
+
+void dMsg3_messageDataInit(sub_msg3_class*, int);
+u8 dMsg3_aimBrightness();
+void dMsg3_textPosition(sub_msg3_class*, u8);
 
 /* 801EB128-801EB420       .text setDummyTexture__10dmsg3_3d_cFv */
 void dmsg3_3d_c::setDummyTexture() {
-    /* Nonmatching */
+    J3DModelData* modelData = mModel->getModelData();
+    J3DTexture* texture = modelData->getTexture();
+    JUTNameTab* textureName = modelData->getTextureName();
+    JUT_ASSERT(146, texture != 0);
+    JUT_ASSERT(147, textureName != 0);
+    for (u16 i = 0; i < texture->getNum(); i++) {
+        const char* name = textureName->getName(i);
+        if (strcmp(name, "0_black") == 0) {
+            texture->setResTIMG(i, *mDoGph_gInf_c::getFrameBufferTimg());
+        } else if (strcmp(name, "1_black") == 0) {
+            texture->setResTIMG(i, *mDoGph_gInf_c::getFrameBufferTimg());
+        }
+    }
+    mDoExt_modelTexturePatch(modelData);
 }
 
 /* 801EB420-801EB444       .text loadModelData__FPUc */
-void loadModelData(u8* i_data) {
-    J3DModelLoaderDataBase::loadBinaryDisplayList(i_data, 0x1020);
+J3DModelData* loadModelData(u8* i_data) {
+    return J3DModelLoaderDataBase::loadBinaryDisplayList(i_data, 0x1020);
 }
 
 /* 801EB444-801EB464       .text loadAnmTransformData__FPUc */
-void loadAnmTransformData(u8* i_data) {
-    J3DAnmLoaderDataBase::load(i_data);
+J3DAnmTransform* loadAnmTransformData(u8* i_data) {
+    return (J3DAnmTransform*)J3DAnmLoaderDataBase::load(i_data);
 }
 
 /* 801EB464-801EB6FC       .text __ct__10dmsg3_3d_cFv */
-dmsg3_3d_c::dmsg3_3d_c() {
-    /* Nonmatching */
+dmsg3_3d_c::dmsg3_3d_c() : field_0x48(NULL) {
+    field_0x48 = mDoExt_createSolidHeapFromGameToCurrent(0x20000, 0x20);
+    field_0x4 = field_0x48->alloc(0x1f40, 0x20);
+    JKRArchive* arc = dComIfGp_getMsgArchive();
+    JKRArchive::readTypeResource(field_0x4, 0x1f40, 'BDLM', "hukidashi_07.bdl", arc);
+    DCStoreRangeNoSync(field_0x4, 0x1f40);
+    field_0xc = field_0x48->alloc(0x1388, 0x20);
+    arc = dComIfGp_getMsgArchive();
+    JKRArchive::readTypeResource(field_0xc, 0x1388, 'BCK ', "hukidashi_07.bck", arc);
+    DCStoreRangeNoSync(field_0xc, 0x1388);
+    J3DModelData* modelData = loadModelData((u8*)field_0x4);
+    JUT_ASSERT(213, modelData != 0);
+    mModel = mDoExt_J3DModel__create(modelData, 0x80000, 0x37441422);
+    JUT_ASSERT(218, mModel != 0);
+    J3DAnmTransform* bck = loadAnmTransformData((u8*)field_0xc);
+    JUT_ASSERT(221, bck != 0);
+    int ok_bck = field_0x34.init(modelData, bck, 1, 0);
+    JUT_ASSERT(228, ok_bck != 0);
+    setDummyTexture();
+    field_0x28.set(0, -0x8000, 0);
+    field_0x10.set(1.0f, 1.0f, 1.0f);
+    mModel->setBaseScale(field_0x10);
+    set_mtx();
+    mDoExt_adjustSolidHeap(field_0x48);
+    mDoExt_restoreCurrentHeap();
 }
 
 /* 801EB6FC-801EB79C       .text __dt__10dmsg3_3d_cFv */
 dmsg3_3d_c::~dmsg3_3d_c() {
-    /* Nonmatching */
+    field_0x48->free(field_0x4);
+    field_0x48->free(field_0xc);
+    mDoExt_destroySolidHeap(field_0x48);
 }
 
 /* 801EB79C-801EB808       .text set_mtx__10dmsg3_3d_cFv */
 void dmsg3_3d_c::set_mtx() {
-    /* Nonmatching */
+    mDoMtx_stack_c::transS(0.0f, 0.0f, 0.0f);
+    mDoMtx_stack_c::ZXYrotM(field_0x28);
+    mModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
 
 /* 801EB808-801EB840       .text exec__10dmsg3_3d_cFv */
 void dmsg3_3d_c::exec() {
-    /* Nonmatching */
+    field_0x34.play();
+    set_mtx();
 }
 
 /* 801EB840-801EB8DC       .text draw__10dmsg3_3d_cFv */
 void dmsg3_3d_c::draw() {
-    /* Nonmatching */
+    dComIfGd_setList2D();
+    field_0x34.entry(mModel->getModelData());
+    mDoExt_modelUpdateDL(mModel);
+    field_0x34.remove(mModel->getModelData());
+    dComIfGd_setList();
 }
 
 /* 801EB8DC-801EBA18       .text dMsg3_value_init__FP14sub_msg3_classUc */
-void dMsg3_value_init(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_value_init(sub_msg3_class* i_this, u8 i_idx) {
+    /* Nonmatching - 95.13%: same instructions, but the allocator parks the four
+     * byte temps before each `or` instead of after all four; register numbering
+     * shifts accordingly. The dead `color = 0` store (eliminated) is required to
+     * stop MWCC from keeping `color` alive across the sprintf calls and
+     * recomputing cc1/gc1 lazily (83% without it). */
+    static const u32 colorTable[] = {
+        0x00000000, 0xB4000000, 0x82828200, 0x0000AA00, 0xF0F01E00,
+        0x82FFFF00, 0x6400FF00, 0x50505000, 0xFFB40000,
+    };
+    char buf0[0x20];
+    char buf2[0x20];
+    char buf1[0x20];
+    char buf3[0x20];
+    u32 color = colorTable[i_this->field_0xea0];
+    u8 c290 = i_this->screen[i_idx].field_0x290;
+    u8 c291 = i_this->screen[i_idx].field_0x291;
+    u8 c292 = i_this->screen[i_idx].field_0x292;
+    u8 c293 = i_this->screen[i_idx].field_0x293;
+    u32 cc0 = color | c290;
+    u32 gc0 = color | c291;
+    u32 cc1 = color | c292;
+    u32 gc1 = color | c293;
+    color = 0;
+    sprintf(buf0, "\033CC[%08x]\033GC[%08x]", cc0, gc0);
+    sprintf(buf1, "\033CC[%08x]\033GC[%08x]", cc1, gc1);
+    sprintf(buf2, "\033CC[%08x]\033GC[%08x]", c290, c291);
+    sprintf(buf3, "\033CC[%08x]\033GC[%08x]", c292, c293);
+    strcpy(i_this->field_0xe60[i_idx], buf0);
+    strcpy(i_this->field_0xe6c[i_idx], buf1);
+    strcpy(i_this->field_0xe78[i_idx], buf2);
+    strcpy(i_this->field_0xe84[i_idx], buf3);
 }
 
 /* 801EBA18-801EBAB4       .text dMsg3_setString__FP14sub_msg3_classUc */
-void dMsg3_setString(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_setString(sub_msg3_class* i_this, u8 i_idx) {
+    ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->setString(i_this->field_0xe60[i_idx]);
+    ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->setString(i_this->field_0xe6c[i_idx]);
+    ((J2DTextBox*)i_this->field_0x9b4[i_idx].pane)->setString(i_this->field_0xe78[i_idx]);
+    ((J2DTextBox*)i_this->field_0xb04[i_idx].pane)->setString(i_this->field_0xe84[i_idx]);
 }
 
 /* 801EBAB4-801EBAD8       .text dMsg3_messagePaneShow__FP14sub_msg3_classUc */
@@ -114,14 +213,25 @@ void dMsg3_dotHide(sub_msg3_class* i_this) {
     fopMsgM_setNowAlphaZero(&i_this->field_0xc8c[1]);
 }
 
+static dDlst_2Dm_c board;
+
 /* 801EBD20-801EBDE4       .text dMsg3_multiTexInit__FP14sub_msg3_class */
-void dMsg3_multiTexInit(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_multiTexInit(sub_msg3_class* i_this) {
+    JKRArchive* arc = dComIfGp_getMsgArchive();
+    JKRArchive::readTypeResource(i_this->field_0xe54, 0x11800, 'TIMG', "hukidashi_0212.bti", arc);
+    DCStoreRangeNoSync(i_this->field_0xe54, 0x11800);
+    arc = dComIfGp_getMsgArchive();
+    JKRArchive::readTypeResource(i_this->field_0xe58, 0x11800, 'TIMG', "hukidashi_07.bti", arc);
+    DCStoreRangeNoSync(i_this->field_0xe58, 0x11800);
+    board.init((ResTIMG*)i_this->field_0xe54, (ResTIMG*)i_this->field_0xe58, 1.0f, 1.0f);
 }
 
 /* 801EBDE4-801EBE94       .text dMsg3_fontdataInit__FP14sub_msg3_class */
-void dMsg3_fontdataInit(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_fontdataInit(sub_msg3_class* i_Msg) {
+    i_Msg->mx = mDoExt_getMesgFont();
+    JUT_ASSERT(628, i_Msg->mx != 0);
+    i_Msg->rx = mDoExt_getRubyFont();
+    JUT_ASSERT(631, i_Msg->rx != 0);
 }
 
 /* 801EBE94-801EBED8       .text dMsg3_screenDataSet__FP14sub_msg3_classUc */
@@ -136,8 +246,23 @@ void dMsg3_screenDataInit(sub_msg3_class*, u8) {
 }
 
 /* 801EC52C-801EC638       .text dMsg3_ScreenDataValueInit__FP14sub_msg3_class */
-void dMsg3_ScreenDataValueInit(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_ScreenDataValueInit(sub_msg3_class* i_this) {
+    J2DTextBox* box = (J2DTextBox*)i_this->field_0x90c[0].pane;
+    f32 line_space = box->mLineSpace;
+    i_this->field_0xeac = (int)(line_space / 2.0f);
+    i_this->field_0xe90 = g_messageHIO.field_0x3c + box->getHeight();
+    fopMsgM_paneTrans(&i_this->field_0x90c[0], 0.0f, 0.0f);
+    fopMsgM_paneTrans(&i_this->field_0x90c[1], 0.0f, i_this->field_0xe90);
+    fopMsgM_paneTrans(&i_this->field_0x90c[2], 0.0f, -i_this->field_0xe90);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xbac[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xbac[1]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc1c[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc1c[1]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc8c[0]);
+    fopMsgM_setNowAlphaZero(&i_this->field_0xc8c[1]);
+    for (int i = 0; i < 3; i++) {
+        dMsg3_messageDataInit(i_this, i);
+    }
 }
 
 /* 801EC638-801EC690       .text dMsg3_stickInfoInit__FP14sub_msg3_class */
@@ -153,8 +278,16 @@ void dMsg3_stickInfoInit(sub_msg3_class* i_this) {
 }
 
 /* 801EC690-801EC714       .text dMsg3_stickInfoCheck__FP14sub_msg3_class */
-void dMsg3_stickInfoCheck(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_stickInfoCheck(sub_msg3_class* i_this) {
+    if (i_this->field_0xed9 == 1) {
+        if (g_mDoCPd_cpadInfo[0].mMainStickPosY <= 0.0f || g_mDoCPd_cpadInfo[3].mMainStickPosY <= 0.0f) {
+            i_this->field_0xed9 = 0;
+        }
+    } else if (i_this->field_0xed9 == 2) {
+        if (g_mDoCPd_cpadInfo[0].mMainStickPosY >= 0.0f || g_mDoCPd_cpadInfo[3].mMainStickPosY >= 0.0f) {
+            i_this->field_0xed9 = 0;
+        }
+    }
 }
 
 /* 801EC714-801EC84C       .text dMsg3_messageOut__FP14sub_msg3_classUci */
@@ -163,13 +296,21 @@ void dMsg3_messageOut(sub_msg3_class*, u8, int) {
 }
 
 /* 801EC84C-801EC8CC       .text dMsg3_yose_select__FP14sub_msg3_classUc */
-void dMsg3_yose_select(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_yose_select(sub_msg3_class* i_this, u8 i_idx) {
+    i_this->screen[i_idx].field_0x118 = i_this->screen[i_idx].stringLength();
+    i_this->field_0xec8[i_idx] = i_this->screen[i_idx].field_0x130;
+    i_this->screen[i_idx].field_0x130 = 0;
+    i_this->screen[i_idx].stringShift();
+    dMsg3_textPosition(i_this, i_idx);
 }
 
 /* 801EC8CC-801EC97C       .text dMsg3_textPosition__FP14sub_msg3_classUc */
-void dMsg3_textPosition(sub_msg3_class*, u8) {
-    /* Nonmatching */
+void dMsg3_textPosition(sub_msg3_class* i_this, u8 i_idx) {
+    int val = i_this->field_0xeac * (2 - i_this->field_0xec8[i_idx]);
+    ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->shiftSet(0.0f, val);
+    ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->shiftSet(0.0f, val);
+    ((J2DTextBox*)i_this->field_0x9b4[i_idx].pane)->shiftSet(0.0f, val);
+    ((J2DTextBox*)i_this->field_0xb04[i_idx].pane)->shiftSet(0.0f, val);
 }
 
 /* 801EC97C-801EC9F0       .text dMsg3_rubySet__FP14sub_msg3_class */
@@ -191,18 +332,38 @@ void dMsg3_arrowMove(sub_msg3_class*) {
 }
 
 /* 801ECC08-801ECCE4       .text dMsg3_aimAlphaSqare__FP14sub_msg3_classii */
-void dMsg3_aimAlphaSqare(sub_msg3_class*, int, int) {
-    /* Nonmatching */
+void dMsg3_aimAlphaSqare(sub_msg3_class* i_this, int i_max, int i_val) {
+    /* Nonmatching - 99.55%: f4/f5 swapped on the two long-lived temps (255.0f and
+     * 255.0f - brightness). Invariant under: locals (diff/ratio/result), const,
+     * register, decl order/position, C-style casts, 0xff literal on either use,
+     * operand order, ternary vs if/else clamp, store-through-local. No inline is
+     * involved (single .text section for this TU in frameworkD.map) and the twin
+     * dMsg2_aimAlphaSqare (d_message.o, unmatched) shows the same retail alloc. */
+    if (i_val < 0) {
+        i_val = 0;
+    } else if (i_val > i_max) {
+        i_val = i_max;
+    }
+    f32 brightness = dMsg3_aimBrightness();
+    i_this->field_0xea4 = 255.0f - (255.0f - brightness) * ((f32)i_val * (f32)i_val / ((f32)i_max * (f32)i_max));
 }
 
 /* 801ECCE4-801ECE04       .text dMsg3_aimAlphaSqrt__FP14sub_msg3_classii */
-void dMsg3_aimAlphaSqrt(sub_msg3_class*, int, int) {
-    /* Nonmatching */
+void dMsg3_aimAlphaSqrt(sub_msg3_class* i_this, int i_max, int i_val) {
+    if (i_val < 0) {
+        i_val = 0;
+    } else if (i_val > i_max) {
+        i_val = i_max;
+    }
+    f32 v = std::sqrtf((f32)i_val / (f32)i_max);
+    f32 brightness = dMsg3_aimBrightness();
+    i_this->field_0xea4 = 255.0f - (255.0f - brightness) * v;
 }
 
 /* 801ECE04-801ECEA0       .text dMsg3_kankyoBrightness__Fv */
 int dMsg3_kankyoBrightness() {
-    /* Nonmatching */
+    GXColorS10* col = dKy_Get_DifCol();
+    return (int)(0.114f * col->b + (0.299f * col->r + 0.587f * col->g));
 }
 
 /* 801ECEA0-801ECEEC       .text dMsg3_aimBrightness__Fv */
@@ -220,23 +381,103 @@ void dMsg3_setCharAlpha(sub_msg3_class*, u8) {
 }
 
 /* 801ED2C8-801ED37C       .text dMsg3_messageShow__FP14sub_msg3_class */
-void dMsg3_messageShow(sub_msg3_class*) {
-    /* Nonmatching */
+void dMsg3_messageShow(sub_msg3_class* i_this) {
+    for (u8 i = 0; i < 3; i++) {
+        dMsg3_screenDataSet(i_this, i);
+    }
+
+    if (i_this->field_0xec0 > 0) {
+        dMsg3_messageOut(i_this, i_this->field_0xe98[0], i_this->field_0xec0 - i_this->field_0x116);
+    }
+
+    dMsg3_messageOut(i_this, i_this->field_0xe98[1], i_this->field_0xec0);
+
+    u8 idx = i_this->field_0xe98[1];
+    // Same value as screen[idx].field_0x27C, but the raw offset form is required
+    // to match codegen (lbzx indexed load vs lbz+add for the member-access form).
+    if (((u8*)i_this)[idx * 0x2a0 + 0x394] == 7) {
+        dMsg3_messageOut(i_this, i_this->field_0xe98[2], i_this->field_0xec0 + i_this->field_0x116);
+    }
 }
 
 /* 801ED37C-801ED4B4       .text dMsg3_messageDataInit__FP14sub_msg3_classi */
-void dMsg3_messageDataInit(sub_msg3_class*, int) {
-    /* Nonmatching */
+void dMsg3_messageDataInit(sub_msg3_class* i_this, int i_idx) {
+    f32 charSpace0 = ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->mCharSpace;
+    f32 charSpace1 = ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->mCharSpace;
+    i_this->screen[i_idx].dataInit();
+    i_this->screen[i_idx].field_0x3C = i_this->field_0xe5c;
+    char* p6c = i_this->field_0xe6c[i_idx];
+    char* p78 = i_this->field_0xe78[i_idx];
+    char* p84 = i_this->field_0xe84[i_idx];
+    i_this->screen[i_idx].field_0x40 = i_this->screen[i_idx].field_0x60 = i_this->field_0xe60[i_idx];
+    i_this->screen[i_idx].field_0x44 = i_this->screen[i_idx].field_0x64 = p6c;
+    i_this->screen[i_idx].field_0x48 = i_this->screen[i_idx].field_0x68 = p78;
+    i_this->screen[i_idx].field_0x4C = i_this->screen[i_idx].field_0x6C = p84;
+    i_this->screen[i_idx].font[0] = i_this->mx;
+    i_this->screen[i_idx].font[1] = i_this->rx;
+    i_this->screen[i_idx].field_0x11C = (int)charSpace0;
+    i_this->screen[i_idx].field_0x124 = (int)charSpace1;
+    i_this->screen[i_idx].field_0x120 = (int)((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->mLineSpace;
+    i_this->screen[i_idx].field_0x0C = (JMSMesgEntry_c*)((u8*)i_this + 0x100);
+    i_this->screen[i_idx].field_0x144 = i_this->field_0xeb0;
+    i_this->screen[i_idx].field_0x14C = i_this->field_0xeb4;
+    i_this->screen[i_idx].field_0x128 = 0x1f7;
+    i_this->screen[i_idx].field_0x12C = 0x1e6;
+    i_this->screen[i_idx].field_0x29C = 0;
 }
 
 /* 801ED4B4-801ED608       .text dMsg3_stopProc__FP14sub_msg3_class */
-void dMsg3_stopProc(sub_msg3_class*) {
-    /* Nonmatching */
+BOOL dMsg3_stopProc(sub_msg3_class* i_this) {
+    if (i_this->field_0xed9 == 0) {
+        if (g_mDoCPd_cpadInfo[0].mMainStickPosY > 0.7f || g_mDoCPd_cpadInfo[3].mMainStickPosY > 0.7f) {
+            if (i_this->field_0xec0 != 0) {
+                u8 idx = i_this->field_0xe98[2];
+                i_this->field_0xed9 = 1;
+                dMsg3_screenDataSet(i_this, idx);
+                i_this->field_0xebc = 3;
+                i_this->field_0xec0 -= i_this->field_0x116;
+                i_this->mStatus = 5;
+                JAIZelBasic::zel_basic->seStart(0x803);
+            }
+        } else if (g_mDoCPd_cpadInfo[0].mButtonTrig.a || g_mDoCPd_cpadInfo[0].mMainStickPosY < -0.7f ||
+                   g_mDoCPd_cpadInfo[3].mMainStickPosY < -0.7f) {
+            u8 idx = i_this->field_0xe98[0];
+            i_this->field_0xed9 = 2;
+            dMsg3_screenDataSet(i_this, idx);
+            i_this->field_0xebc = 1;
+            i_this->field_0xec0 += i_this->field_0x116;
+            i_this->mStatus = 5;
+            JAIZelBasic::zel_basic->seStart(0x803);
+        }
+    } else {
+        dMsg3_stickInfoCheck(i_this);
+    }
+    return TRUE;
 }
 
 /* 801ED608-801ED738       .text dMsg3_closewaitProc__FP14sub_msg3_class */
-void dMsg3_closewaitProc(sub_msg3_class*) {
-    /* Nonmatching */
+BOOL dMsg3_closewaitProc(sub_msg3_class* i_this) {
+    if (i_this->field_0xed9 == 0) {
+        if (g_mDoCPd_cpadInfo[0].mMainStickPosY > 0.7f || g_mDoCPd_cpadInfo[3].mMainStickPosY > 0.7f) {
+            if (i_this->field_0xec0 != 0) {
+                u8 idx = i_this->field_0xe98[2];
+                i_this->field_0xed9 = 1;
+                dMsg3_screenDataSet(i_this, idx);
+                i_this->field_0xebc = 3;
+                i_this->field_0xec0 -= i_this->field_0x116;
+                i_this->mStatus = 5;
+                JAIZelBasic::zel_basic->seStart(0x803);
+            }
+        } else if (g_mDoCPd_cpadInfo[0].mButtonTrig.a || g_mDoCPd_cpadInfo[0].mMainStickPosY < -0.7f ||
+                   g_mDoCPd_cpadInfo[3].mMainStickPosY < -0.7f) {
+            i_this->field_0xed9 = 2;
+            JAIZelBasic::zel_basic->seStart(0x80d);
+            i_this->mStatus = 0x10;
+        }
+    } else {
+        dMsg3_stickInfoCheck(i_this);
+    }
+    return TRUE;
 }
 
 /* 801ED738-801ED8A8       .text dMsg3_openProc__FP14sub_msg3_class */
@@ -254,9 +495,17 @@ void dMsg3_outwaitProc(sub_msg3_class*) {
     /* Nonmatching */
 }
 
+static J2DScreen* sScreen3[3];
+
 /* 801EDE80-801EDF18       .text draw__14dDlst_2DMSG3_cFv */
 void dDlst_2DMSG3_c::draw() {
-    /* Nonmatching */
+    J2DOrthoGraph* graf = dComIfGp_getCurrentGrafPort();
+    graf->setPort();
+    for (int i = 0; i < 3; i++) {
+        sScreen3[i]->setScissor(true);
+        sScreen3[i]->draw(0.0f, 0.0f, graf);
+    }
+    outFontDraw();
 }
 
 /* 801EDF18-801EE104       .text outFontDraw__14dDlst_2DMSG3_cFv */
