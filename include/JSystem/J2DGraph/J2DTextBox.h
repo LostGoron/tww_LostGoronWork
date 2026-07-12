@@ -66,8 +66,10 @@ public:
     char* getStringPtr() const;
     s32 setString(const char*, ...);
 
-    // TODO
-    void setFontColor(JUtility::TColor, JUtility::TColor) {}
+    void setFontColor(JUtility::TColor charColor, JUtility::TColor gradColor) {
+        mCharColor = charColor;
+        mGradColor = gradColor;
+    }
 
     virtual ~J2DTextBox();
     virtual bool setConnectParent(bool);
