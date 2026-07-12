@@ -123,11 +123,17 @@ void dmsg3_3d_c::draw() {
 
 /* 801EB8DC-801EBA18       .text dMsg3_value_init__FP14sub_msg3_classUc */
 void dMsg3_value_init(sub_msg3_class* i_this, u8 i_idx) {
-    /* Nonmatching - 95.13%: same instructions, but the allocator parks the four
-     * byte temps before each `or` instead of after all four; register numbering
-     * shifts accordingly. The dead `color = 0` store (eliminated) is required to
-     * stop MWCC from keeping `color` alive across the sprintf calls and
-     * recomputing cc1/gc1 lazily (83% without it). */
+    /* Nonmatching - 95.13%: all 79 instructions match in opcode and order except
+     * that the four shadow-color copies (`0 | byte`, folded to mr) are emitted
+     * interleaved before each text-color `or` instead of grouped after all four,
+     * with a register permutation following from it. Probed per regalloc.md:
+     * declaration order/reversal, uninit predecls, actor alias, split locals
+     * (u8/u32, killed and rekilled), struct rereads - MWCC folds and coalesces
+     * every same-value two-variable form back to this same IR. The or-group/
+     * mr-group idiom exists nowhere else in the game (only the unimplemented
+     * dMsg2 twin). Reassigning `color = 0` between the two groups is real code
+     * (shadow text is black), not a liveness hack: without it, color stays
+     * callee-saved across the calls and cc1/gc1 are rematerialized (83%). */
     static const u32 colorTable[] = {
         0x00000000, 0xB4000000, 0x82828200, 0x0000AA00, 0xF0F01E00,
         0x82FFFF00, 0x6400FF00, 0x50505000, 0xFFB40000,
@@ -137,19 +143,23 @@ void dMsg3_value_init(sub_msg3_class* i_this, u8 i_idx) {
     char buf1[0x20];
     char buf3[0x20];
     u32 color = colorTable[i_this->field_0xea0];
-    u8 c290 = i_this->screen[i_idx].field_0x290;
-    u8 c291 = i_this->screen[i_idx].field_0x291;
-    u8 c292 = i_this->screen[i_idx].field_0x292;
-    u8 c293 = i_this->screen[i_idx].field_0x293;
-    u32 cc0 = color | c290;
-    u32 gc0 = color | c291;
-    u32 cc1 = color | c292;
-    u32 gc1 = color | c293;
-    color = 0;
+    u8 b0 = i_this->screen[i_idx].field_0x290;
+    u8 b1 = i_this->screen[i_idx].field_0x291;
+    u8 b2 = i_this->screen[i_idx].field_0x292;
+    u8 b3 = i_this->screen[i_idx].field_0x293;
+    u32 cc0 = color | b0;
+    u32 gc0 = color | b1;
+    u32 cc1 = color | b2;
+    u32 gc1 = color | b3;
+    color = 0; // shadow text is drawn in black
+    u32 cc2 = color | b0;
+    u32 gc2 = color | b1;
+    u32 cc3 = color | b2;
+    u32 gc3 = color | b3;
     sprintf(buf0, "\033CC[%08x]\033GC[%08x]", cc0, gc0);
     sprintf(buf1, "\033CC[%08x]\033GC[%08x]", cc1, gc1);
-    sprintf(buf2, "\033CC[%08x]\033GC[%08x]", c290, c291);
-    sprintf(buf3, "\033CC[%08x]\033GC[%08x]", c292, c293);
+    sprintf(buf2, "\033CC[%08x]\033GC[%08x]", cc2, gc2);
+    sprintf(buf3, "\033CC[%08x]\033GC[%08x]", cc3, gc3);
     strcpy(i_this->output_text[i_idx], buf0);
     strcpy(i_this->output_ruby[i_idx], buf1);
     strcpy(i_this->output_textSdw[i_idx], buf2);
@@ -520,18 +530,21 @@ u8 dMsg3_tex_i4_color[240] = {
 
 /* 801ECEEC-801ED2C8       .text dMsg3_setCharAlpha__FP14sub_msg3_classUc */
 void dMsg3_setCharAlpha(sub_msg3_class* i_this, u8 i_idx) {
-    /* Nonmatching - 98.74%: all 247 instructions match in opcode and order except the
-     * clrlwi of i_idx, which lands three slots early. The remaining delta is a register
-     * rotation on the four `i_this + i_idx` clamp bases (retail r7,r4,r5,r6 vs r4,r5,r6,r7):
-     * retail parks the first long-lived anonymous temp at the top of the scratch pool,
-     * the same allocator tie-break left over in outFontDraw. The scroll term must be
+    /* Nonmatching - 99.19%: all 247 instructions match in opcode and order except the
+     * clrlwi of i_idx, which lands three slots early (right after the lineSpace statement
+     * instead of after the diff statement); no probed form moves it - the truncation is
+     * hoisted there whether idx is the raw parameter or a named local of any type/const.
+     * The former base-register rotation is fixed by the named `base` pointer below:
+     * a named local is register-allocated after the anonymous CSE temps, which is what
+     * puts the first clamp base at r7 (top of pool) like retail. The scroll term must be
      * spelled out twice (a `scroll` local sinks the mLineSpace conversion to its single
      * use), and the four alpha reads must be locals declared back-to-front (that is what
      * batches the four loads ahead of the four stores, in reverse). */
     int lineSpace = (int)((J2DTextBox*)i_this->field_0x90c[0].pane)->mLineSpace;
 
     f32 diff = i_this->field_0xcfc[0].mPosTopLeftOrig.y - i_this->field_0xda4[0].mPosTopLeftOrig.y;
-    f32 posY = diff + i_this->field_0x90c[i_idx].mPosTopLeft.y +
+    u8 idx = i_idx;
+    f32 posY = diff + i_this->field_0x90c[idx].mPosTopLeft.y +
                (f32)(i_this->field_0xeac * (2 - i_this->field_0xec8[i_idx]));
 
     int textTop = (int)posY;
@@ -542,82 +555,83 @@ void dMsg3_setCharAlpha(sub_msg3_class* i_this, u8 i_idx) {
     if (textY < 0x3a) {
         int next = textY + i_this->mx->getHeight();
         if (textY >= 0) {
-            i_this->field_0xedb[i_idx] = dMsg3_tex_i4_color[textY];
+            i_this->field_0xedb[idx] = dMsg3_tex_i4_color[textY];
         } else {
-            i_this->field_0xedb[i_idx] = 0;
+            i_this->field_0xedb[idx] = 0;
         }
         if (next >= 0) {
-            i_this->field_0xede[i_idx] = dMsg3_tex_i4_color[next];
+            i_this->field_0xede[idx] = dMsg3_tex_i4_color[next];
         } else {
-            i_this->field_0xede[i_idx] = 0;
+            i_this->field_0xede[idx] = 0;
         }
     } else if (textTop > 0xbb) {
         int next = textTop + i_this->mx->getHeight();
         if (textTop <= 0xef) {
-            i_this->field_0xedb[i_idx] = dMsg3_tex_i4_color[textTop];
+            i_this->field_0xedb[idx] = dMsg3_tex_i4_color[textTop];
         } else {
-            i_this->field_0xedb[i_idx] = 0;
+            i_this->field_0xedb[idx] = 0;
         }
         if (next <= 0xef) {
-            i_this->field_0xede[i_idx] = dMsg3_tex_i4_color[next];
+            i_this->field_0xede[idx] = dMsg3_tex_i4_color[next];
         } else {
-            i_this->field_0xede[i_idx] = 0;
+            i_this->field_0xede[idx] = 0;
         }
     } else {
-        i_this->field_0xedb[i_idx] = 0xff;
-        i_this->field_0xede[i_idx] = 0xff;
+        i_this->field_0xedb[idx] = 0xff;
+        i_this->field_0xede[idx] = 0xff;
     }
 
     if (rubyY < 0x3a) {
         int next = rubyY + i_this->rx->getHeight();
         if (rubyY >= 0) {
-            i_this->field_0xee1[i_idx] = dMsg3_tex_i4_color[rubyY];
+            i_this->field_0xee1[idx] = dMsg3_tex_i4_color[rubyY];
         } else {
-            i_this->field_0xee1[i_idx] = 0;
+            i_this->field_0xee1[idx] = 0;
         }
         if (next >= 0) {
-            i_this->field_0xee4[i_idx] = dMsg3_tex_i4_color[next];
+            i_this->field_0xee4[idx] = dMsg3_tex_i4_color[next];
         } else {
-            i_this->field_0xee4[i_idx] = 0;
+            i_this->field_0xee4[idx] = 0;
         }
     } else if (rubyTop > 0xbb) {
         int next = rubyTop + i_this->rx->getHeight();
         if (rubyTop <= 0xef) {
-            i_this->field_0xee1[i_idx] = dMsg3_tex_i4_color[rubyTop];
+            i_this->field_0xee1[idx] = dMsg3_tex_i4_color[rubyTop];
         } else {
-            i_this->field_0xee1[i_idx] = 0;
+            i_this->field_0xee1[idx] = 0;
         }
         if (next <= 0xef) {
-            i_this->field_0xee4[i_idx] = dMsg3_tex_i4_color[next];
+            i_this->field_0xee4[idx] = dMsg3_tex_i4_color[next];
         } else {
-            i_this->field_0xee4[i_idx] = 0;
+            i_this->field_0xee4[idx] = 0;
         }
     } else {
-        i_this->field_0xee1[i_idx] = 0xff;
-        i_this->field_0xee4[i_idx] = 0xff;
+        i_this->field_0xee1[idx] = 0xff;
+        i_this->field_0xee4[idx] = 0xff;
     }
 
-    if (i_this->field_0xedb[i_idx] > (u8)i_this->field_0xea8) {
-        i_this->field_0xedb[i_idx] = i_this->field_0xea8;
+    u8* base = (u8*)i_this + idx;
+    if (base[0xedb] > (u8)i_this->field_0xea8) {
+        base[0xedb] = i_this->field_0xea8;
     }
-    if (i_this->field_0xede[i_idx] > (u8)i_this->field_0xea8) {
-        i_this->field_0xede[i_idx] = i_this->field_0xea8;
+    if (i_this->field_0xede[idx] > (u8)i_this->field_0xea8) {
+        i_this->field_0xede[idx] = i_this->field_0xea8;
     }
-    if (i_this->field_0xee1[i_idx] > (u8)i_this->field_0xea8) {
-        i_this->field_0xee1[i_idx] = i_this->field_0xea8;
+    if (i_this->field_0xee1[idx] > (u8)i_this->field_0xea8) {
+        i_this->field_0xee1[idx] = i_this->field_0xea8;
     }
-    if (i_this->field_0xee4[i_idx] > (u8)i_this->field_0xea8) {
-        i_this->field_0xee4[i_idx] = i_this->field_0xea8;
+    if (i_this->field_0xee4[idx] > (u8)i_this->field_0xea8) {
+        i_this->field_0xee4[idx] = i_this->field_0xea8;
     }
 
-    u8 rubySdwAlpha = i_this->field_0xee4[i_idx];
-    u8 rubyAlpha = i_this->field_0xee1[i_idx];
-    u8 textSdwAlpha = i_this->field_0xede[i_idx];
-    u8 textAlpha = i_this->field_0xedb[i_idx];
-    i_this->screen[i_idx].field_0x290 = textAlpha;
-    i_this->screen[i_idx].field_0x291 = textSdwAlpha;
-    i_this->screen[i_idx].field_0x292 = rubyAlpha;
-    i_this->screen[i_idx].field_0x293 = rubySdwAlpha;
+    u8 rubySdwAlpha = i_this->field_0xee4[idx];
+    u8 rubyAlpha = i_this->field_0xee1[idx];
+    u8 textSdwAlpha = i_this->field_0xede[idx];
+    u8 textAlpha = base[0xedb];
+    i_this->screen[idx].field_0x290 = textAlpha;
+    i_this->screen[idx].field_0x291 = textSdwAlpha;
+    i_this->screen[idx].field_0x292 = rubyAlpha;
+    i_this->screen[idx].field_0x293 = rubySdwAlpha;
 }
 
 /* 801ED2C8-801ED37C       .text dMsg3_messageShow__FP14sub_msg3_class */
@@ -932,16 +946,16 @@ void dDlst_2DMSG3_c::draw() {
 
 /* 801EDF18-801EE104       .text outFontDraw__14dDlst_2DMSG3_cFv */
 void dDlst_2DMSG3_c::outFontDraw() {
-    /* Nonmatching - 99.27%: all 123 instructions match in opcode and order; only a
-     * register permutation remains (the actor reload temp gets r4 here vs r8 in retail,
-     * cascading into the off/wordbase/posX/pane numbering). Checked per decompiling.md:
-     * frameworkD.map lists no per-TU inlines for this function, the D44J01 debug binary
-     * is not available locally, and TP has no counterpart; the dMsg2 twin
-     * (outFontDraw__14dDlst_2DMSG2_cFv, unmatched) shows the same addressing idiom with
-     * a different allocation, so the delta is allocator tie-breaking on the anonymous
-     * actor temp. Probed shapes (all invariant or worse): named/unnamed base, named
-     * wordbase (folds to 0x280 disps via copy-prop), member-derived base with cancelled
-     * constant, actor alias, decayed/element pointers. */
+    /* Nonmatching - 99.84%: all 123 instructions match; only two adds have their
+     * commutative operands transposed (add r3,r28,r8 vs r8,r28 and add r4,r3,r4 vs
+     * r4,r3), both canonicalized independently of source operand order - no lever
+     * found. The former r4/r8 actor/pane permutation is fixed by the declaration
+     * order below: MWCC allocates named locals after anonymous CSE temps, and the
+     * last-declared named local gets the top scratch register, so `pane` must be
+     * predeclared before `actor` for `actor` to land in r8 like retail. `off` must
+     * be updated in place with `+=` (a plain `off = base + off` is renamed to a new
+     * temp and the multi-def is what stops copy-prop folding the 0x118 into the
+     * displacements). */
     J2DPane* clip = field_0x4->field_0xcfc[0].pane;
     f32 top = clip->mGlobalBounds.i.y;
     f32 bottom = clip->mGlobalBounds.f.y;
@@ -953,18 +967,21 @@ void dDlst_2DMSG3_c::outFontDraw() {
             // shares this base across the four loads. Member access folds the 0x118
             // into the displacements (0x280/0x2bc/0x2f8) and drops that addi; the
             // named base is what lets the byte and word loads share it.
-            u8* base = (u8*)field_0x4 + i * 0x2a0;
+            J2DPane* pane;
+            sub_msg3_class* actor = field_0x4;
+            u8* base = (u8*)((u32)actor + i * 0x2a0);
             u8 num = base[k + 0x399];
             int off = k * 4 + 0x118;
-            int posX = *(s32*)(base + off + 0x168);
-            int line = *(s32*)(base + off + 0x1a4);
-            int size = *(s32*)(base + off + 0x1e0);
+            off += (int)base;
+            int posX = *(s32*)(off + 0x168);
+            int line = *(s32*)(off + 0x1a4);
+            int size = *(s32*)(off + 0x1e0);
             if (num != 0xff) {
-                J2DPane* pane = field_0x4->field_0x90c[i].pane;
+                pane = actor->field_0x90c[i].pane;
                 int x = posX + pane->mGlobalBounds.i.x;
-                int prod = field_0x4->field_0xeac * ((2 - field_0x4->field_0xec8[i]) + line * 2);
+                int prod = actor->field_0xeac * ((2 - actor->field_0xec8[i]) + line * 2);
                 int y = prod + pane->mGlobalBounds.i.y;
-                u8 alpha = field_0x4->field_0xea8;
+                u8 alpha = actor->field_0xea8;
                 if (y > top && y < bottom - size) {
                     fopMsgM_outFontDraw(bbutton_icon3[k][i], bbutton_kage3[k][i], x, y, size,
                                         &bbuttonTimer3[k][i], alpha, num);
