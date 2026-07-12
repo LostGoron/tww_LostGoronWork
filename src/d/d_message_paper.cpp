@@ -16,6 +16,7 @@
 #include "JSystem/J3DGraphBase/J3DTexture.h"
 #include "JSystem/JUtility/JUTNameTab.h"
 #include "JSystem/JKernel/JKRArchive.h"
+#include "JSystem/JKernel/JKRExpHeap.h"
 #include "d/d_drawlist.h"
 #include "dolphin/os/OSCache.h"
 #include "stdio.h"
@@ -23,6 +24,7 @@
 #include "JSystem/J3DGraphLoader/J3DModelLoader.h"
 #include "JSystem/J3DGraphLoader/J3DAnmLoader.h"
 #include "JSystem/J2DGraph/J2DTextBox.h"
+#include "JSystem/J2DGraph/J2DPicture.h"
 #include "JSystem/J2DGraph/J2DScreen.h"
 #include "JSystem/J2DGraph/J2DOrthoGraph.h"
 #include "JSystem/JUtility/JUTAssert.h"
@@ -31,6 +33,8 @@
 void dMsg3_messageDataInit(sub_msg3_class*, int);
 u8 dMsg3_aimBrightness();
 void dMsg3_textPosition(sub_msg3_class*, u8);
+void dMsg3_yose_select(sub_msg3_class*, u8);
+void dMsg3_setCharAlpha(sub_msg3_class*, u8);
 
 /* 801EB128-801EB420       .text setDummyTexture__10dmsg3_3d_cFv */
 void dmsg3_3d_c::setDummyTexture() {
@@ -146,18 +150,18 @@ void dMsg3_value_init(sub_msg3_class* i_this, u8 i_idx) {
     sprintf(buf1, "\033CC[%08x]\033GC[%08x]", cc1, gc1);
     sprintf(buf2, "\033CC[%08x]\033GC[%08x]", c290, c291);
     sprintf(buf3, "\033CC[%08x]\033GC[%08x]", c292, c293);
-    strcpy(i_this->field_0xe60[i_idx], buf0);
-    strcpy(i_this->field_0xe6c[i_idx], buf1);
-    strcpy(i_this->field_0xe78[i_idx], buf2);
-    strcpy(i_this->field_0xe84[i_idx], buf3);
+    strcpy(i_this->output_text[i_idx], buf0);
+    strcpy(i_this->output_ruby[i_idx], buf1);
+    strcpy(i_this->output_textSdw[i_idx], buf2);
+    strcpy(i_this->output_rubySdw[i_idx], buf3);
 }
 
 /* 801EBA18-801EBAB4       .text dMsg3_setString__FP14sub_msg3_classUc */
 void dMsg3_setString(sub_msg3_class* i_this, u8 i_idx) {
-    ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->setString(i_this->field_0xe60[i_idx]);
-    ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->setString(i_this->field_0xe6c[i_idx]);
-    ((J2DTextBox*)i_this->field_0x9b4[i_idx].pane)->setString(i_this->field_0xe78[i_idx]);
-    ((J2DTextBox*)i_this->field_0xb04[i_idx].pane)->setString(i_this->field_0xe84[i_idx]);
+    ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->setString(i_this->output_text[i_idx]);
+    ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->setString(i_this->output_ruby[i_idx]);
+    ((J2DTextBox*)i_this->field_0x9b4[i_idx].pane)->setString(i_this->output_textSdw[i_idx]);
+    ((J2DTextBox*)i_this->field_0xb04[i_idx].pane)->setString(i_this->output_rubySdw[i_idx]);
 }
 
 /* 801EBAB4-801EBAD8       .text dMsg3_messagePaneShow__FP14sub_msg3_classUc */
@@ -172,9 +176,28 @@ void dMsg3_messagePaneHide(sub_msg3_class* i_this, u8 i_idx) {
     i_this->field_0xa5c[i_idx].pane->hide();
 }
 
+static J2DScreen* sScreen3[3];
+static J2DPicture* bbutton_icon3[8][3];
+static J2DPicture* bbutton_kage3[8][3];
+static s16 bbuttonTimer3[8][3];
+
+dmsg3_3d_c* msg3d;
+int dMsg3_popSpeed;
+static dDlst_2DMSG3_c message;
+
 /* 801EBAFC-801EBBD0       .text dMsg3_outFontHide__FUc */
-void dMsg3_outFontHide(u8) {
-    /* Nonmatching */
+void dMsg3_outFontHide(u8 i_idx) {
+    for (int i = 0; i < 8; i++) {
+        bbutton_icon3[i][i_idx]->hide();
+        bbutton_kage3[i][i_idx]->hide();
+        J2DPicture* icon = bbutton_icon3[i][i_idx];
+        icon->mRotation = 0.0f;
+        icon->calcMtx();
+        J2DPicture* kage = bbutton_kage3[i][i_idx];
+        kage->mRotation = 0.0f;
+        kage->calcMtx();
+        bbuttonTimer3[i][i_idx] = -1;
+    }
 }
 
 /* 801EBBD0-801EBC08       .text dMsg3_arrowUpShow__FP14sub_msg3_class */
@@ -218,12 +241,12 @@ static dDlst_2Dm_c board;
 /* 801EBD20-801EBDE4       .text dMsg3_multiTexInit__FP14sub_msg3_class */
 void dMsg3_multiTexInit(sub_msg3_class* i_this) {
     JKRArchive* arc = dComIfGp_getMsgArchive();
-    JKRArchive::readTypeResource(i_this->field_0xe54, 0x11800, 'TIMG', "hukidashi_0212.bti", arc);
-    DCStoreRangeNoSync(i_this->field_0xe54, 0x11800);
+    JKRArchive::readTypeResource(i_this->Tex[0], 0x11800, 'TIMG', "hukidashi_0212.bti", arc);
+    DCStoreRangeNoSync(i_this->Tex[0], 0x11800);
     arc = dComIfGp_getMsgArchive();
-    JKRArchive::readTypeResource(i_this->field_0xe58, 0x11800, 'TIMG', "hukidashi_07.bti", arc);
-    DCStoreRangeNoSync(i_this->field_0xe58, 0x11800);
-    board.init((ResTIMG*)i_this->field_0xe54, (ResTIMG*)i_this->field_0xe58, 1.0f, 1.0f);
+    JKRArchive::readTypeResource(i_this->Tex[1], 0x11800, 'TIMG', "hukidashi_07.bti", arc);
+    DCStoreRangeNoSync(i_this->Tex[1], 0x11800);
+    board.init((ResTIMG*)i_this->Tex[0], (ResTIMG*)i_this->Tex[1], 1.0f, 1.0f);
 }
 
 /* 801EBDE4-801EBE94       .text dMsg3_fontdataInit__FP14sub_msg3_class */
@@ -291,8 +314,30 @@ void dMsg3_stickInfoCheck(sub_msg3_class* i_this) {
 }
 
 /* 801EC714-801EC84C       .text dMsg3_messageOut__FP14sub_msg3_classUci */
-void dMsg3_messageOut(sub_msg3_class*, u8, int) {
-    /* Nonmatching */
+void dMsg3_messageOut(sub_msg3_class* i_this, u8 i_idx, int i_val) {
+    i_this->field_0xec8[i_idx] = 0;
+    dMsg3_messagePaneShow(i_this, i_idx);
+    dMsg3_messageDataInit(i_this, i_idx);
+
+    i_this->screen[i_idx].field_0x118 = 0;
+    i_this->screen[i_idx].field_0x138 = 0;
+    i_this->screen[i_idx].field_0x13C = i_val;
+
+    dMsg3_yose_select(i_this, i_idx);
+    i_this->screen[i_idx].field_0x299 = 1;
+    dMsg3_setCharAlpha(i_this, i_idx);
+    i_this->screen[i_idx].stringSet();
+
+    for (int i = 0; i < 8; i++) {
+        u8 num = i_this->screen[i_idx].field_0x281[i];
+        u32 val = i_this->screen[i_idx].field_0x220[i];
+        if (num != 0xff && bbuttonTimer3[i][i_idx] == -1) {
+            fopMsgM_outFontSet(bbutton_icon3[i][i_idx], bbutton_kage3[i][i_idx],
+                               &bbuttonTimer3[i][i_idx], val, num);
+        }
+    }
+
+    dMsg3_setString(i_this, i_idx);
 }
 
 /* 801EC84C-801EC8CC       .text dMsg3_yose_select__FP14sub_msg3_classUc */
@@ -387,7 +432,7 @@ void dMsg3_messageShow(sub_msg3_class* i_this) {
     }
 
     if (i_this->field_0xec0 > 0) {
-        dMsg3_messageOut(i_this, i_this->field_0xe98[0], i_this->field_0xec0 - i_this->field_0x116);
+        dMsg3_messageOut(i_this, i_this->field_0xe98[0], i_this->field_0xec0 - i_this->entry.field_0x16);
     }
 
     dMsg3_messageOut(i_this, i_this->field_0xe98[1], i_this->field_0xec0);
@@ -396,7 +441,7 @@ void dMsg3_messageShow(sub_msg3_class* i_this) {
     // Same value as screen[idx].field_0x27C, but the raw offset form is required
     // to match codegen (lbzx indexed load vs lbz+add for the member-access form).
     if (((u8*)i_this)[idx * 0x2a0 + 0x394] == 7) {
-        dMsg3_messageOut(i_this, i_this->field_0xe98[2], i_this->field_0xec0 + i_this->field_0x116);
+        dMsg3_messageOut(i_this, i_this->field_0xe98[2], i_this->field_0xec0 + i_this->entry.field_0x16);
     }
 }
 
@@ -406,10 +451,10 @@ void dMsg3_messageDataInit(sub_msg3_class* i_this, int i_idx) {
     f32 charSpace1 = ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->mCharSpace;
     i_this->screen[i_idx].dataInit();
     i_this->screen[i_idx].field_0x3C = i_this->field_0xe5c;
-    char* p6c = i_this->field_0xe6c[i_idx];
-    char* p78 = i_this->field_0xe78[i_idx];
-    char* p84 = i_this->field_0xe84[i_idx];
-    i_this->screen[i_idx].field_0x40 = i_this->screen[i_idx].field_0x60 = i_this->field_0xe60[i_idx];
+    char* p6c = i_this->output_ruby[i_idx];
+    char* p78 = i_this->output_textSdw[i_idx];
+    char* p84 = i_this->output_rubySdw[i_idx];
+    i_this->screen[i_idx].field_0x40 = i_this->screen[i_idx].field_0x60 = i_this->output_text[i_idx];
     i_this->screen[i_idx].field_0x44 = i_this->screen[i_idx].field_0x64 = p6c;
     i_this->screen[i_idx].field_0x48 = i_this->screen[i_idx].field_0x68 = p78;
     i_this->screen[i_idx].field_0x4C = i_this->screen[i_idx].field_0x6C = p84;
@@ -435,7 +480,7 @@ BOOL dMsg3_stopProc(sub_msg3_class* i_this) {
                 i_this->field_0xed9 = 1;
                 dMsg3_screenDataSet(i_this, idx);
                 i_this->field_0xebc = 3;
-                i_this->field_0xec0 -= i_this->field_0x116;
+                i_this->field_0xec0 -= i_this->entry.field_0x16;
                 i_this->mStatus = 5;
                 JAIZelBasic::zel_basic->seStart(0x803);
             }
@@ -445,7 +490,7 @@ BOOL dMsg3_stopProc(sub_msg3_class* i_this) {
             i_this->field_0xed9 = 2;
             dMsg3_screenDataSet(i_this, idx);
             i_this->field_0xebc = 1;
-            i_this->field_0xec0 += i_this->field_0x116;
+            i_this->field_0xec0 += i_this->entry.field_0x16;
             i_this->mStatus = 5;
             JAIZelBasic::zel_basic->seStart(0x803);
         }
@@ -464,7 +509,7 @@ BOOL dMsg3_closewaitProc(sub_msg3_class* i_this) {
                 i_this->field_0xed9 = 1;
                 dMsg3_screenDataSet(i_this, idx);
                 i_this->field_0xebc = 3;
-                i_this->field_0xec0 -= i_this->field_0x116;
+                i_this->field_0xec0 -= i_this->entry.field_0x16;
                 i_this->mStatus = 5;
                 JAIZelBasic::zel_basic->seStart(0x803);
             }
@@ -481,21 +526,76 @@ BOOL dMsg3_closewaitProc(sub_msg3_class* i_this) {
 }
 
 /* 801ED738-801ED8A8       .text dMsg3_openProc__FP14sub_msg3_class */
-void dMsg3_openProc(sub_msg3_class*) {
-    /* Nonmatching */
+BOOL dMsg3_openProc(sub_msg3_class* i_this) {
+    if (i_this->field_0xe94 == 0) {
+        dMsg3_messageOut(i_this, i_this->field_0xe98[1], i_this->field_0xec0);
+        // Raw offset (lbzx) required to match; member access emits lbz+add here.
+        if (((u8*)i_this)[i_this->field_0xe98[1] * 0x2a0 + 0x394] == 7) {
+            dMsg3_messageOut(i_this, i_this->field_0xe98[2], i_this->field_0xec0 + i_this->entry.field_0x16);
+        }
+    } else if (i_this->field_0xe94 == dMsg3_popSpeed) {
+        i_this->mStatus = ((u8*)i_this)[i_this->field_0xe98[1] * 0x2a0 + 0x394];
+    }
+
+    i_this->field_0xea8 = 255.0f * fopMsgM_valueIncrease(dMsg3_popSpeed, i_this->field_0xe94, 0);
+    if (i_this->field_0xe94 != 0) {
+        dMsg3_messageShow(i_this);
+    }
+
+    if (((u8*)i_this)[i_this->field_0xe98[1] * 0x2a0 + 0x394] == 7) {
+        i_this->field_0xc1c[0].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xc1c[1].mNowAlpha = i_this->field_0xea8;
+    } else {
+        i_this->field_0xc8c[0].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xc8c[1].mNowAlpha = i_this->field_0xea8;
+    }
+
+    dMsg3_aimAlphaSqrt(i_this, dMsg3_popSpeed, i_this->field_0xe94);
+    dComIfG_setBrightness(i_this->field_0xea4);
+    i_this->field_0xe94++;
+    return TRUE;
 }
 
 /* 801ED8A8-801EDA30       .text dMsg3_closeProc__FP14sub_msg3_class */
-void dMsg3_closeProc(sub_msg3_class*) {
-    /* Nonmatching */
+BOOL dMsg3_closeProc(sub_msg3_class* i_this) {
+    if (i_this->field_0xe94 == 0) {
+        for (u8 i = 0; i < 3; i++) {
+            dMsg3_messagePaneHide(i_this, i);
+            dMsg3_outFontHide(i);
+        }
+        JKRFileLoader::removeResource(i_this->head_p, NULL);
+        i_this->mStatus = 0x12;
+    }
+
+    i_this->field_0xe94--;
+    if (i_this->field_0xe94 < 0) {
+        i_this->field_0xe94 = 0;
+    }
+
+    i_this->field_0xea8 = 255.0f * fopMsgM_valueIncrease(dMsg3_popSpeed, i_this->field_0xe94, 0);
+
+    if (i_this->field_0xbac[0].mNowAlpha != 0) {
+        i_this->field_0xbac[0].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xbac[1].mNowAlpha = i_this->field_0xea8;
+    }
+    if (i_this->field_0xc1c[0].mNowAlpha != 0) {
+        i_this->field_0xc1c[0].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xc1c[1].mNowAlpha = i_this->field_0xea8;
+    }
+    if (i_this->field_0xc8c[0].mNowAlpha != 0) {
+        i_this->field_0xc8c[0].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xc8c[1].mNowAlpha = i_this->field_0xea8;
+    }
+
+    dMsg3_aimAlphaSqare(i_this, dMsg3_popSpeed, i_this->field_0xe94);
+    dComIfG_setBrightness(i_this->field_0xea4);
+    return TRUE;
 }
 
 /* 801EDA30-801EDE80       .text dMsg3_outwaitProc__FP14sub_msg3_class */
 void dMsg3_outwaitProc(sub_msg3_class*) {
     /* Nonmatching */
 }
-
-static J2DScreen* sScreen3[3];
 
 /* 801EDE80-801EDF18       .text draw__14dDlst_2DMSG3_cFv */
 void dDlst_2DMSG3_c::draw() {
@@ -510,12 +610,60 @@ void dDlst_2DMSG3_c::draw() {
 
 /* 801EDF18-801EE104       .text outFontDraw__14dDlst_2DMSG3_cFv */
 void dDlst_2DMSG3_c::outFontDraw() {
-    /* Nonmatching */
+    /* Nonmatching - 95.59%: one missing instruction. Retail anchors the CSE of the three
+     * word loads on `&screen[i] + k*4` (addi 0x118 into the index, disp 0x168/0x1a4/0x1e0);
+     * MWCC here folds 0x118 into the displacement instead (disp 0x280/0x2bc/0x2f8), saving
+     * the addi. Invariant under: member access, pointer-to-element (&screen[i]), and
+     * decayed-array pointer (screen) -- the latter two also move the 0x118 onto the i*0x2a0
+     * side, which breaks the lbzx of the byte load. Everything else matches exactly. */
+    J2DPane* clip = field_0x4->field_0xcfc;
+    f32 top = clip->mGlobalBounds.i.y;
+    f32 bottom = clip->mGlobalBounds.f.y;
+
+    for (int i = 0; i < 3; i++) {
+        for (int k = 0; k < 8; k++) {
+            u8 num = field_0x4->screen[i].field_0x281[k];
+            int posX = field_0x4->screen[i].field_0x168[k];
+            int line = field_0x4->screen[i].field_0x1A4[k];
+            int size = field_0x4->screen[i].field_0x1E0[k];
+            if (num != 0xff) {
+                J2DPane* pane = field_0x4->field_0x90c[i].pane;
+                int x = posX + pane->mGlobalBounds.i.x;
+                int y = field_0x4->field_0xeac * ((2 - field_0x4->field_0xec8[i]) + line * 2) +
+                        pane->mGlobalBounds.i.y;
+                u8 alpha = field_0x4->field_0xea8;
+                if (y > top && y < bottom - size) {
+                    fopMsgM_outFontDraw(bbutton_icon3[k][i], bbutton_kage3[k][i], x, y, size,
+                                        &bbuttonTimer3[k][i], alpha, num);
+                }
+            }
+        }
+    }
 }
 
 /* 801EE104-801EE218       .text dMsg3_Draw__FP14sub_msg3_class */
-static BOOL dMsg3_Draw(sub_msg3_class*) {
-    /* Nonmatching */
+static BOOL dMsg3_Draw(sub_msg3_class* i_this) {
+    for (int i = 0; i < 3; i++) {
+        i_this->field_0x90c[i].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xa5c[i].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0x9b4[i].mNowAlpha = i_this->field_0xea8;
+        i_this->field_0xb04[i].mNowAlpha = i_this->field_0xea8;
+        fopMsgM_setAlpha(&i_this->field_0x90c[i]);
+        fopMsgM_setAlpha(&i_this->field_0xa5c[i]);
+        fopMsgM_setAlpha(&i_this->field_0x9b4[i]);
+        fopMsgM_setAlpha(&i_this->field_0xb04[i]);
+    }
+
+    fopMsgM_setAlpha(&i_this->field_0xbac[0]);
+    fopMsgM_setAlpha(&i_this->field_0xbac[1]);
+    fopMsgM_setAlpha(&i_this->field_0xc1c[0]);
+    fopMsgM_setAlpha(&i_this->field_0xc1c[1]);
+    fopMsgM_setAlpha(&i_this->field_0xc8c[0]);
+    fopMsgM_setAlpha(&i_this->field_0xc8c[1]);
+
+    dComIfGd_set2DOpa(&message);
+    msg3d->draw();
+    return TRUE;
 }
 
 /* 801EE218-801EE740       .text dMsg3_Execute__FP14sub_msg3_class */
@@ -529,11 +677,123 @@ static BOOL dMsg3_IsDelete(sub_msg3_class*) {
 }
 
 /* 801EE748-801EE904       .text dMsg3_Delete__FP14sub_msg3_class */
-static BOOL dMsg3_Delete(sub_msg3_class*) {
-    /* Nonmatching */
+static BOOL dMsg3_Delete(sub_msg3_class* i_this) {
+    dComIfGp_setMesgStatus(0);
+    dComIfG_setBrightness(0xff);
+
+    JKRHeap* oldHeap = mDoExt_setCurrentHeap(i_this->heap);
+
+    for (int i = 0; i < 3; i++) {
+        delete sScreen3[i];
+    }
+
+    i_this->heap->free(i_this->Tex[0]);
+    i_this->heap->free(i_this->Tex[1]);
+
+    mDoExt_removeMesgFont();
+    mDoExt_removeRubyFont();
+
+    for (int i = 0; i < 3; i++) {
+        for (int k = 0; k < 8; k++) {
+            delete bbutton_icon3[k][i];
+            delete bbutton_kage3[k][i];
+        }
+        i_this->heap->free(i_this->output_text[i]);
+        i_this->heap->free(i_this->output_ruby[i]);
+        i_this->heap->free(i_this->output_textSdw[i]);
+        i_this->heap->free(i_this->output_rubySdw[i]);
+    }
+
+    delete msg3d;
+    msg3d = NULL;
+
+    mDoExt_setCurrentHeap(oldHeap);
+    i_this->heap->freeAll();
+
+    dComIfGp_setHeapLockFlag(0);
+    return TRUE;
 }
 
 /* 801EE904-801EEEFC       .text dMsg3_Create__FP9msg_class */
-static cPhs_State dMsg3_Create(msg_class*) {
-    /* Nonmatching */
+static cPhs_State dMsg3_Create(msg_class* i_msg) {
+    /* Nonmatching - 99.45%: two prologue instructions swapped (the .bss base
+     * materialization is emitted before the i_Msg param copy instead of after) */
+    sub_msg3_class* i_Msg = (sub_msg3_class*)i_msg;
+
+    u8 heapLock = dComIfGp_isHeapLockFlag();
+    if (heapLock != 0 && heapLock != 9) {
+        return cPhs_INIT_e;
+    }
+
+    i_Msg->heap = dComIfGp_getExpHeap2D();
+    dComIfGp_setHeapLockFlag(9);
+    JKRHeap* oldHeap = mDoExt_setCurrentHeap(i_Msg->heap);
+
+    msg3d = new dmsg3_3d_c();
+
+    for (u8 i = 0; i < 3; i++) {
+        sScreen3[i] = new J2DScreen();
+        sScreen3[i]->set("hukidashi_02.blo", dComIfGp_getMsgArchive());
+    }
+
+    i_Msg->Tex[0] = i_Msg->heap->alloc(0x11800, 0x20);
+    JUT_ASSERT(2188, i_Msg->Tex[0] != 0);
+    i_Msg->Tex[1] = i_Msg->heap->alloc(0x11800, 0x20);
+    JUT_ASSERT(2190, i_Msg->Tex[1] != 0);
+
+    dMsg3_fontdataInit(i_Msg);
+
+    for (u8 i = 0; i < 3; i++) {
+        for (int k = 0; k < 8; k++) {
+            bbutton_icon3[k][i] = new J2DPicture("font_07_02.bti");
+            bbutton_kage3[k][i] = new J2DPicture("font_07_02.bti");
+            fopMsgM_blendInit(bbutton_icon3[k][i], "font_00.bti");
+            fopMsgM_blendInit(bbutton_kage3[k][i], "font_00.bti");
+            bbutton_icon3[k][i]->hide();
+            bbutton_kage3[k][i]->hide();
+            bbutton_icon3[k][i]->setAlpha(0);
+            bbutton_kage3[k][i]->setAlpha(0);
+            bbuttonTimer3[k][i] = -1;
+        }
+    }
+
+    for (u8 i = 0; i < 3; i++) {
+        i_Msg->output_text[i] = (char*)i_Msg->heap->alloc(0x3e9, 4);
+        JUT_ASSERT(2213, i_Msg->output_text[i] != 0);
+        i_Msg->output_ruby[i] = (char*)i_Msg->heap->alloc(0x3e9, 4);
+        JUT_ASSERT(2216, i_Msg->output_ruby[i] != 0);
+        i_Msg->output_textSdw[i] = (char*)i_Msg->heap->alloc(0x3e9, 4);
+        JUT_ASSERT(2219, i_Msg->output_textSdw[i] != 0);
+        i_Msg->output_rubySdw[i] = (char*)i_Msg->heap->alloc(0x3e9, 4);
+        JUT_ASSERT(2222, i_Msg->output_rubySdw[i] != 0);
+    }
+
+    i_Msg->head_p = i_Msg->msgGet.getMesgHeader(i_Msg->mMsgNo);
+    JUT_ASSERT(2227, i_Msg->head_p);
+    i_Msg->field_0xe5c = i_Msg->msgGet.getMessage(i_Msg->head_p);
+    i_Msg->entry = i_Msg->msgGet.getMesgEntry(i_Msg->head_p);
+    i_Msg->field_0xe9c = (i_Msg->msgGet.mGroupID << 8) | i_Msg->msgGet.mResMsgNo;
+    i_Msg->mStatus = 2;
+
+    dMsg3_multiTexInit(i_Msg);
+
+    for (u8 i = 0; i < 3; i++) {
+        dMsg3_screenDataInit(i_Msg, i);
+        dMsg3_screenDataSet(i_Msg, i);
+        dMsg3_messagePaneHide(i_Msg, i);
+    }
+
+    dMsg3_ScreenDataValueInit(i_Msg);
+    dMsg3_stickInfoInit(i_Msg);
+
+    i_Msg->field_0xebc = 0;
+    i_Msg->field_0xe98[0] = 2;
+    i_Msg->field_0xe98[1] = 0;
+    i_Msg->field_0xe98[2] = 1;
+    dMsg3_popSpeed = g_messageHIO.field_0x3b;
+
+    mDoExt_setCurrentHeap(oldHeap);
+    message.setActorP(i_Msg);
+    dComIfGp_setMesgStatus(i_Msg->mStatus);
+    return cPhs_COMPLEATE_e;
 }

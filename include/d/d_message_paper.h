@@ -11,15 +11,17 @@
 
 class JUTFont;
 class J3DModel;
+class J2DPane;
 class JKRSolidHeap;
+class JKRExpHeap;
 
 class sub_msg3_class : public msg_class {
 public:
-    /* 0x0FC */ u8 field_0xfc[0x116 - 0xFC];
-    /* 0x116 */ u8 field_0x116;
-    /* 0x117 */ u8 field_0x117;
+    /* 0x0FC */ JKRExpHeap* heap;
+    /* 0x100 */ JMSMesgEntry_c entry;
     /* 0x118 */ fopMsgM_msgDataProc_c screen[3];
-    /* 0x8F8 */ u8 field_0x8f8[0x90C - 0x8F8];
+    /* 0x8F8 */ fopMsgM_msgGet_c msgGet;
+    /* 0x908 */ mesg_header* head_p;
     /* 0x90C */ fopMsgM_pane_class field_0x90c[3];
     /* 0x9B4 */ fopMsgM_pane_class field_0x9b4[3];
     /* 0xA5C */ fopMsgM_pane_class field_0xa5c[3];
@@ -27,24 +29,25 @@ public:
     /* 0xBAC */ fopMsgM_pane_class field_0xbac[2];
     /* 0xC1C */ fopMsgM_pane_class field_0xc1c[2];
     /* 0xC8C */ fopMsgM_pane_class field_0xc8c[2];
-    /* 0xCFC */ u8 field_0xcfc[0xE4C - 0xCFC];
+    /* 0xCFC */ J2DPane* field_0xcfc;
+    /* 0xD00 */ u8 field_0xd00[0xE4C - 0xD00];
     /* 0xE4C */ JUTFont* mx;
     /* 0xE50 */ JUTFont* rx;
-    /* 0xE54 */ void* field_0xe54;
-    /* 0xE58 */ void* field_0xe58;
+    /* 0xE54 */ void* Tex[2];
     /* 0xE5C */ const char* field_0xe5c;
-    /* 0xE60 */ char* field_0xe60[3];
-    /* 0xE6C */ char* field_0xe6c[3];
-    /* 0xE78 */ char* field_0xe78[3];
-    /* 0xE84 */ char* field_0xe84[3];
+    /* 0xE60 */ char* output_text[3];
+    /* 0xE6C */ char* output_ruby[3];
+    /* 0xE78 */ char* output_textSdw[3];
+    /* 0xE84 */ char* output_rubySdw[3];
     /* 0xE90 */ f32 field_0xe90;
-    /* 0xE94 */ u8 field_0xe94[0xE98 - 0xE94];
+    /* 0xE94 */ int field_0xe94;
     /* 0xE98 */ u8 field_0xe98[3];
-    /* 0xE9B */ u8 field_0xe9b[0xEA0 - 0xE9B];
+    /* 0xE9B */ u8 field_0xe9b;
+    /* 0xE9C */ u32 field_0xe9c;
     /* 0xEA0 */ u16 field_0xea0;
     /* 0xEA2 */ u8 field_0xea2[0xEA4 - 0xEA2];
     /* 0xEA4 */ f32 field_0xea4;
-    /* 0xEA8 */ u8 field_0xea8[0xEAC - 0xEA8];
+    /* 0xEA8 */ f32 field_0xea8;
     /* 0xEAC */ int field_0xeac;
     /* 0xEB0 */ u32 field_0xeb0;
     /* 0xEB4 */ u32 field_0xeb4;
@@ -84,10 +87,12 @@ class dDlst_2DMSG3_c : public dDlst_base_c {
 public:
     virtual ~dDlst_2DMSG3_c() {}
 
-    void setActorP(sub_msg3_class*) {}
+    void setActorP(sub_msg3_class* i_actor) { field_0x4 = i_actor; }
 
     virtual void draw();
     void outFontDraw();
+
+    /* 0x04 */ sub_msg3_class* field_0x4;
 };
 
 #endif /* D_MESSAGE_PAPER_H */
