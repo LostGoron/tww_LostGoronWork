@@ -186,10 +186,10 @@ void dMsg3_messagePaneHide(sub_msg3_class* i_this, u8 i_idx) {
     i_this->field_0xa5c[i_idx].pane->hide();
 }
 
-static J2DScreen* sScreen3[3];
-static J2DPicture* bbutton_icon3[8][3];
-static J2DPicture* bbutton_kage3[8][3];
-static s16 bbuttonTimer3[8][3];
+J2DScreen* sScreen3[3];
+J2DPicture* bbutton_icon3[8][3];
+J2DPicture* bbutton_kage3[8][3];
+s16 bbuttonTimer3[8][3];
 
 dmsg3_3d_c* msg3d;
 int dMsg3_popSpeed;
@@ -420,6 +420,13 @@ void dMsg3_yose_select(sub_msg3_class* i_this, u8 i_idx) {
 
 /* 801EC8CC-801EC97C       .text dMsg3_textPosition__FP14sub_msg3_classUc */
 void dMsg3_textPosition(sub_msg3_class* i_this, u8 i_idx) {
+    /* Nonmatching - 99.55%: all 44 instructions match except the product's register
+     * (retail r0 vs r7 here). The int must stay a named local passed to all four
+     * shiftSet calls (each inline instance converts it separately, sharing the xoris
+     * halves). Probed: inline expression x4 (aliasing reloads eac/ec8 per call, 30%),
+     * f32 local / assignment-in-argument (single CSE'd conversion, 47%), named
+     * operands with repeated register product (76%). A named short-lived int never
+     * lands in r0; no lever found. */
     int val = i_this->field_0xeac * (2 - i_this->field_0xec8[i_idx]);
     ((J2DTextBox*)i_this->field_0x90c[i_idx].pane)->shiftSet(0.0f, val);
     ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->shiftSet(0.0f, val);
@@ -466,7 +473,9 @@ void dMsg3_aimAlphaSqare(sub_msg3_class* i_this, int i_max, int i_val) {
     /* Nonmatching - 99.55%: f4/f5 swapped on the two long-lived temps (255.0f and
      * 255.0f - brightness). Invariant under: locals (diff/ratio/result), const,
      * register, decl order/position, C-style casts, 0xff literal on either use,
-     * operand order, ternary vs if/else clamp, store-through-local. No inline is
+     * operand order, ternary vs if/else clamp, store-through-local, named diff,
+     * named/predeclared 255.0f (float temps re-coalesce under copy-prop, unlike
+     * the GPR named-local lever that fixed setCharAlpha/outFontDraw). No inline is
      * involved (single .text section for this TU in frameworkD.map) and the twin
      * dMsg2_aimAlphaSqare (d_message.o, unmatched) shows the same retail alloc. */
     if (i_val < 0) {
@@ -660,9 +669,14 @@ void dMsg3_messageDataInit(sub_msg3_class* i_this, int i_idx) {
     f32 charSpace1 = ((J2DTextBox*)i_this->field_0xa5c[i_idx].pane)->mCharSpace;
     i_this->screen[i_idx].dataInit();
     i_this->screen[i_idx].field_0x3C = i_this->field_0xe5c;
-    char* p6c = i_this->output_ruby[i_idx];
-    char* p78 = i_this->output_textSdw[i_idx];
-    char* p84 = i_this->output_rubySdw[i_idx];
+    // Declared forward but assigned in reverse: the loads must come out back-to-front
+    // while keeping the registers of forward declaration order.
+    char* p6c;
+    char* p78;
+    char* p84;
+    p84 = i_this->output_rubySdw[i_idx];
+    p78 = i_this->output_textSdw[i_idx];
+    p6c = i_this->output_ruby[i_idx];
     i_this->screen[i_idx].field_0x40 = i_this->screen[i_idx].field_0x60 = i_this->output_text[i_idx];
     i_this->screen[i_idx].field_0x44 = i_this->screen[i_idx].field_0x64 = p6c;
     i_this->screen[i_idx].field_0x48 = i_this->screen[i_idx].field_0x68 = p78;
@@ -1131,8 +1145,12 @@ static BOOL dMsg3_Delete(sub_msg3_class* i_this) {
 
 /* 801EE904-801EEEFC       .text dMsg3_Create__FP9msg_class */
 static cPhs_State dMsg3_Create(msg_class* i_msg) {
-    /* Nonmatching - 99.45%: two prologue instructions swapped (the .bss base
-     * materialization is emitted before the i_Msg param copy instead of after) */
+    /* Nonmatching - 99.45%: two prologue instructions swapped - the anonymous .bss
+     * anchor (lis/addi into r28) is hoisted above the i_Msg param copy instead of
+     * being emitted after it. Probed: static_cast, cast-per-access without the local
+     * (ruled out - the retail JUT_ASSERT strings literally say "i_Msg->Tex[0] != 0",
+     * proving the named local), declaration order swap with heapLock. Same
+     * anchor/park emission-order family as the setCharAlpha clrlwi slot; no lever. */
     sub_msg3_class* i_Msg = (sub_msg3_class*)i_msg;
 
     u8 heapLock = dComIfGp_isHeapLockFlag();
