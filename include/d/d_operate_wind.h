@@ -5,6 +5,7 @@
 #include "f_op/f_op_msg.h"
 #include "f_op/f_op_msg_mng.h"
 #include "m_Do/m_Do_hostIO.h"
+#include "JSystem/J2DGraph/J2DPicture.h"
 #include "JSystem/JUtility/TColor.h"
 
 struct fopMsgM_pane_class;
@@ -40,6 +41,8 @@ public:
     
     void draw();
 
+    virtual ~dDlst_Ow_main_c();
+
 public:
     /* 0x004 */ J2DScreen* scrn;
     /* 0x008 */ JUtility::TColor color;
@@ -52,9 +55,11 @@ public:
 
 class dDlst_Ow_mask_c : public dDlst_base_c {
 public:
-    void setScreen(J2DScreen*) {}
+    void setScreen(J2DScreen* s) { scrn = s; }
     
     void draw();
+
+    virtual ~dDlst_Ow_mask_c();
 
 public:
     /* 0x004 */ J2DScreen* scrn;
@@ -62,10 +67,11 @@ public:
 
 class dOperate_wind_c {
 public:
-    virtual ~dOperate_wind_c() {}
-    void setTimer(s16) {}
+    dOperate_wind_c() {}
+    virtual ~dOperate_wind_c();
+    void setTimer(s16 t) { field_0x8c8 = t; }
     
-    static int dOw_angleRegular(f32);
+    int dOw_angleRegular(f32);
     int dOw_stickControl(int, s16);
     void screenSet();
     void alphaSet(f32);
@@ -101,7 +107,25 @@ public:
     /* 0x55C */ STControl* stick;
     /* 0x560 */ dDlst_Ow_main_c* mMain;
     /* 0x564 */ dDlst_Ow_mask_c* mMask;
-};
+    /* 0x568 */ J2DPicture::TCornerColor field_0x568;
+    /* 0x578 */ J2DPicture::TCornerColor field_0x578;
+    /* 0x588 */ J2DPicture::TCornerColor field_0x588;
+    /* 0x598 */ f32 field_0x598[50];
+    /* 0x660 */ f32 field_0x660[50];
+    /* 0x728 */ f32 field_0x728[50];
+    /* 0x7F0 */ f32 field_0x7f0[50];
+    /* 0x8B8 */ f32 field_0x8b8;
+    /* 0x8BC */ u8 field_0x8bc[0x8C0 - 0x8BC];
+    /* 0x8C0 */ f32 field_0x8c0;
+    /* 0x8C4 */ f32 field_0x8c4;
+    /* 0x8C8 */ s16 field_0x8c8;
+    /* 0x8CA */ s16 field_0x8ca;
+    /* 0x8CC */ s16 field_0x8cc;
+    /* 0x8CE */ s16 field_0x8ce;
+    /* 0x8D0 */ int field_0x8d0;
+    /* 0x8D4 */ u8 field_0x8d4;
+    /* 0x8D5 */ u8 field_0x8d5[0x8D8 - 0x8D5];
+};  // Size: 0x8D8
 
 class dOw_c : public msg_class {
 public:
@@ -113,7 +137,7 @@ public:
     void getStatus() {}
     void setHeap(JKRExpHeap* h) { heap = h; }
     void setStatus(u8) {}
-    void setTimer(s16) {}
+    void setTimer(s16 t) { dOw_scrn->setTimer(t); }
 
     void _create();
     void _delete();
