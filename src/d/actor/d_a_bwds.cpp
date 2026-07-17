@@ -14,17 +14,11 @@
 #include "res/Object/Bwd.h"
 #include "d/actor/d_a_player.h"
 
-enum ActionStatus {
+enum Action {
     ACTION_UG_MOVE = 0,
     ACTION_HOOK_ON = 1,
     ACTION_HOOK_CHANCE = 2,
     ACTION_FAIL = 5,
-};
-
-enum KOBOSS_HEAD_JOINT {
-    JNT_KUBI,
-    JNT_AGO,
-    JNT_HEAD,
 };
 
 static GXColor eff_col;
@@ -95,7 +89,7 @@ static void body_control(bwds_class* i_this) {
     f32 fVar1 = 0.0f;
     f32 fVar4;
     J3DModel* model = i_this->mpMorf->getModel();
-    MTXCopy(model->getAnmMtx(JNT_HEAD), *calc_mtx);
+    MTXCopy(model->getAnmMtx(KOBOSS_HEAD_JNT_HEAD_e), *calc_mtx);
     cXyz vec1((REG0_F(0) + 60.0f) * l_HIO.m008, REG0_F(1), REG0_F(2));
     cXyz vec2;
     cXyz vec3;
@@ -280,7 +274,7 @@ static void ug_move(bwds_class* i_this) {
             i_this->m02F8++;
             actor->speedF = l_HIO.m010;
             actor->speed.y = REG0_F(13) + 50.0f;
-            actor->current.angle.y = fopAcM_searchActorAngleY(actor, dComIfGp_getPlayer(0));
+            actor->current.angle.y = fopAcM_searchPlayerAngleY(actor);
             local_34.x = 0.0f;
             local_34.y = 0.0f;
             local_34.z = 2000.0f;
@@ -455,7 +449,7 @@ static void fail(bwds_class* i_this) {
         local_34.y = REG0_F(19) + 60.0f;
         local_34.z = REG0_F(20) + -30.0f;
         player = daPy_getPlayerActorClass();
-        s16 angle = fopAcM_searchActorAngleY(actor, player);
+        s16 angle = fopAcM_searchPlayerAngleY(actor);
         cMtx_YrotS(*calc_mtx, angle);
         MtxPosition(&local_34, &actor->speed);
         i_this->m02F8++;
@@ -657,7 +651,7 @@ static BOOL daBwds_Execute(bwds_class* i_this) {
 
     pJVar8->setBaseTRMtx(mDoMtx_stack_c::get());
     i_this->mpMorf->calc();
-    MTXCopy(pJVar8->getAnmMtx(JNT_HEAD), *calc_mtx);
+    MTXCopy(pJVar8->getAnmMtx(KOBOSS_HEAD_JNT_HEAD_e), *calc_mtx);
 
     local_bc.set(REG0_F(0), REG0_F(1), REG0_F(2));
     MtxPosition(&local_bc, &actor->eyePos);
